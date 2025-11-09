@@ -159,15 +159,19 @@ const Reminders = ({ agentPin }) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  console.log('🏷️ Reminder tab clicked:', tab.id);
+                  setActiveTab(tab.id);
+                }}
                 className={`
-                  flex items-center space-x-2 px-4 py-3 rounded-full font-medium transition-all duration-300
-                  min-h-[44px] whitespace-nowrap touch-manipulation
+                  flex items-center space-x-2 px-4 py-3 rounded-full font-medium transition-all duration-300 relative z-20
+                  min-h-[44px] whitespace-nowrap touch-manipulation cursor-pointer select-none
                   ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-white shadow-luxury-lg scale-105'
-                    : 'text-slate-600 hover:text-slate-800 hover:bg-white/80 hover:scale-105'
+                    ? 'bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-white shadow-luxury-lg active:scale-95'
+                    : 'text-slate-600 hover:text-slate-800 hover:bg-white/80 active:scale-95'
                   }
                 `}
+                style={{ pointerEvents: 'auto' }}
               >
                 <IconComponent className="w-4 h-4" />
                 <span className="text-sm">{tab.label}</span>
@@ -261,10 +265,12 @@ const Reminders = ({ agentPin }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => {
+                        console.log('🔄 Reminder Call Now clicked for:', reminder.fcm_customers?.name);
                         setSelectedCustomer(reminder.fcm_customers);
                         setShowDisposition(true);
                       }}
-                      className="btn-luxury text-sm font-semibold min-h-[44px] px-6 rounded-full hover:scale-105 transition-all duration-300 touch-manipulation"
+                      className="btn-luxury text-sm font-semibold min-h-[44px] px-6 rounded-full transition-all duration-300 touch-manipulation relative z-20 active:scale-95"
+                      style={{ pointerEvents: 'auto' }}
                     >
                       Call Now
                     </button>

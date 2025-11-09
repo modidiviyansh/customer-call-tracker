@@ -305,11 +305,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
                   {/* Call Now Button - Full width on mobile */}
                   <motion.button
-                    onClick={() => handleCallCustomer(customer)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      console.log('📞 Call Now clicked for:', customer.name);
+                      handleCallCustomer(customer);
+                    }}
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation relative z-20 active:scale-95"
+                    whileTap={{ scale: 0.95 }}
                     title="Open phone dialer"
+                    style={{ pointerEvents: 'auto' }}
                   >
                     <motion.div
                       animate={{ scale: [1, 1.1, 1] }}
@@ -322,11 +325,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
                   {/* Log Call Button - Full width on mobile */}
                   <motion.button
-                    onClick={() => handleDispositionCustomer(customer)}
-                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      console.log('📝 Log Call clicked for:', customer.name);
+                      handleDispositionCustomer(customer);
+                    }}
+                    className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-green-500/25 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation relative z-20 active:scale-95"
+                    whileTap={{ scale: 0.95 }}
                     title="Log call disposition"
+                    style={{ pointerEvents: 'auto' }}
                   >
                     <motion.div
                       animate={{ scale: [1, 1.1, 1] }}
@@ -521,10 +527,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
                 <div className="flex space-x-2 ml-3">
                   <motion.button
-                    onClick={() => handleCallCustomer(record.fcm_customers)}
-                    className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-1 min-h-[44px] touch-manipulation"
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      console.log('🔄 Call Again clicked for:', record.fcm_customers?.name);
+                      handleCallCustomer(record.fcm_customers);
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-2 shadow-lg shadow-blue-500/25 transition-all duration-300 text-sm font-semibold flex items-center space-x-1 min-h-[44px] touch-manipulation relative z-20 active:scale-95"
+                    whileTap={{ scale: 0.95 }}
+                    style={{ pointerEvents: 'auto' }}
                   >
                     <motion.div
                       animate={{ scale: [1, 1.1, 1] }}
@@ -619,11 +628,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
               return (
                 <motion.button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    console.log('📱 Dashboard tab clicked:', tab.id);
+                    setActiveTab(tab.id);
+                  }}
                   className={`
-                    relative flex flex-col items-center justify-center space-y-1
-                    px-4 py-3 rounded-full font-medium transition-all
-                    min-h-[48px] min-w-[48px] w-full touch-manipulation
+                    relative flex flex-col items-center justify-center space-y-1 z-30
+                    px-4 py-3 rounded-full font-medium transition-all cursor-pointer select-none
+                    min-h-[48px] min-w-[48px] w-full touch-manipulation active:scale-95
                     ${isActive
                       ? 'text-white'
                       : 'text-slate-600 hover:text-slate-800'
@@ -631,6 +643,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   `}
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  style={{ pointerEvents: 'auto' }}
                 >
                   {/* Animated bubble background */}
                   <motion.div

@@ -1,131 +1,163 @@
-import React from 'react';
-import { AlertTriangle, Database, Wifi, WifiOff } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Bug, X, Zap, Mouse, Phone, User, Clock } from 'lucide-react';
 
-const DebugPanel = ({ 
-  supabaseConnected, 
-  customersLoaded, 
-  callRecordsLoaded, 
-  errors = [], 
-  warnings = [] 
-}) => {
-  // Only show in development
-  if (process.env.NODE_ENV === 'production') return null;
+const DebugPanel = ({ isOpen, onClose, lastAction, customerData, reminders, callRecords }) => {
+  const [events, setEvents] = useState([]);
+  const [isEnabled, setIsEnabled] = useState(true);
 
-  const isDebugMode = localStorage.getItem('debug_mode') === 'true';
+  // Add event listeners for debugging
+  useEffect(() => {
+    if (!isEnabled) return;
 
-  if (!isDebugMode) {
-    return (
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => localStorage.setItem('debug_mode', 'true')}
-          className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-luxury hover:bg-red-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
-        >
-          🐛 Enable Debug
-        </button>
-      </div>
-    );
-  }
+    const handleClick = (event) => {
+      const eventInfo = {
+        type: 'click',
+        timestamp: new Date().toISOString(),
+        target: event.target.tagName,
+        targetClass: event.target.className,
+        targetId: event.target.id,
+        targetText: event.target.textContent?.substring(0, 50),
+        x: event.clientX,
+        y: event.clientY,
+        pageX: event.pageX,
+        pageY: event.pageY,
+        isButton: event.target.tagName === 'BUTTON',
+        hasOnClick: !!event.target.onclick
+      };
+      
+      console.log('🔍 CLICK EVENT:', eventInfo);
+      
+      setEvents(prev => {
+        const newEvents = [eventInfo, ...prev.slice(0, 9)]; // Keep last 10 events
+        return newEvents;
+      });
+    };
 
-  const getStatusIcon = (status) => {
-    return status ? (
-      <Wifi className="w-4 h-4 text-green-500" />
-    ) : (
-      <WifiOff className="w-4 h-4 text-red-500" />
-    );
+    const handleTouch = (event) => {
+      const touch = event.touches[0];
+      const eventInfo = {
+        type: 'touch',
+        timestamp: new Date().toISOString(),
+        target: touch?.target?.tagName || 'unknown',
+        targetClass: touch?.target?.className || '',
+        targetText: touch?.target?.textContent?.substring(0, 50),
+        x: touch?.clientX,
+        y: touch?.clientY,
+        isButton: touch?.target?.tagName === 'BUTTON'
+      };
+      
+      console.log('👆 TOUCH EVENT:', eventInfo);
+      
+      setEvents(prev => {
+        const newEvents = [eventInfo, ...prev.slice(0, 9)];
+        return newEvents;
+      });
+    };
+
+    // Add event listeners
+    document.addEventListener('click', handleClick, true);
+    document.addEventListener('touchstart', handleTouch, true);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('touchstart', handleTouch, true);
+    };
+  }, [isEnabled]);
+
+  // Test button click functionality
+  const testButtonClick = () => {
+    console.log('🧪 TEST: Button click test initiated');
+    setEvents(prev => [{
+      type: 'test-button',
+      timestamp: new Date().toISOString(),
+      message: 'Button test clicked successfully'
+    }, ...prev.slice(0, 9)]);
   };
 
-  const getStatusColor = (status) => {
-    return status ? 'text-green-600' : 'text-red-600';
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-80 glass-card-gradient p-4 text-sm shadow-gradient hover:shadow-luxury-lg hover:scale-105 transition-all duration-300">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-slate-800">🔧 Debug Panel</h3>
-        <button
-          onClick={() => localStorage.setItem('debug_mode', 'false')}
-          className="text-slate-500 hover:text-slate-700 p-1 rounded-full hover:bg-white/50 transition-all duration-300 hover:scale-110"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* System Status */}
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center space-x-2">
-            <Database className="w-4 h-4" />
-            <span>Supabase Connection</span>
-          </span>
-          {getStatusIcon(supabaseConnected)}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      className="fixed top-4 left-4 z-[9999] w-80 max-h-96 bg-red-500 text-white rounded-2xl shadow-2xl overflow-hidden"
+    >
+      {/* Header */}
+      <div className="p-3 bg-red-600 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Bug className="w-4 h-4" />
+          <span className="font-semibold text-sm">Debug Panel</span>
         </div>
-        
-        <div className="flex items-center justify-between">
-          <span>Customers Loaded</span>
-          <span className={getStatusColor(customersLoaded)}>
-            {customersLoaded ? '✓' : '✗'}
-          </span>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <span>Call Records Loaded</span>
-          <span className={getStatusColor(callRecordsLoaded)}>
-            {callRecordsLoaded ? '✓' : '✗'}
-          </span>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsEnabled(!isEnabled)}
+            className="p-1 hover:bg-red-700 rounded"
+            title="Toggle debug logging"
+          >
+            <Zap className={`w-4 h-4 ${isEnabled ? 'text-yellow-300' : 'text-gray-300'}`} />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-red-700 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Errors */}
-      {errors.length > 0 && (
-        <div className="mb-4">
-          <h4 className="font-semibold text-red-600 mb-2 flex items-center space-x-1">
-            <AlertTriangle className="w-4 h-4" />
-            <span>Errors ({errors.length})</span>
-          </h4>
+      {/* Debug Content */}
+      <div className="p-3 bg-red-500 max-h-80 overflow-y-auto">
+        {/* Event Log */}
+        <div className="mb-3">
+          <div className="flex items-center space-x-2 mb-2">
+            <Mouse className="w-4 h-4" />
+            <span className="font-semibold text-sm">Events ({events.length})</span>
+          </div>
+          
           <div className="space-y-1 max-h-32 overflow-y-auto">
-            {errors.map((error, index) => (
-              <div key={index} className="text-xs text-red-700 bg-red-50 p-2 rounded">
-                {typeof error === 'string' ? error : error.message}
+            {events.map((event, index) => (
+              <div
+                key={index}
+                className="text-xs bg-red-600 rounded p-2 font-mono"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">{event.type}</span>
+                  <span className="text-xs opacity-75">
+                    {new Date(event.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                {event.target && (
+                  <div className="mt-1">
+                    <span className="text-yellow-200">Target: </span>
+                    <span className="text-white">{event.target}</span>
+                  </div>
+                )}
+                {event.targetText && (
+                  <div className="text-xs opacity-75 truncate">
+                    {event.targetText}
+                  </div>
+                )}
+                {event.message && (
+                  <div className="text-xs opacity-75">
+                    {event.message}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Warnings */}
-      {warnings.length > 0 && (
-        <div className="mb-4">
-          <h4 className="font-semibold text-yellow-600 mb-2">Warnings ({warnings.length})</h4>
-          <div className="space-y-1 max-h-24 overflow-y-auto">
-            {warnings.map((warning, index) => (
-              <div key={index} className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded">
-                {typeof warning === 'string' ? warning : warning.message}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="space-y-2">
+        {/* Test Button */}
         <button
-          onClick={() => window.location.reload()}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-full text-sm font-medium shadow-luxury hover:bg-blue-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
+          onClick={testButtonClick}
+          className="w-full bg-yellow-500 text-red-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-400 transition-colors text-sm"
         >
-          🔄 Reload Page
-        </button>
-        
-        <button
-          onClick={() => {
-            localStorage.clear();
-            window.location.reload();
-          }}
-          className="w-full bg-red-500 text-white py-2 px-4 rounded-full text-sm font-medium shadow-luxury hover:bg-red-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
-        >
-          🗑️ Clear Storage & Reload
+          🧪 Test Click Event
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

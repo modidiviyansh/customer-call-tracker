@@ -145,19 +145,22 @@ const PINEntry = ({ onAuthenticated }) => {
             {numberPad.flat().map((number, index) => (
               <button
                 key={index}
-                onClick={() => handleButtonPress(number)}
+                onClick={() => {
+                  console.log('🔢 PIN button clicked:', number);
+                  handleButtonPress(number);
+                }}
                 disabled={!number || isLoading}
                 className={`
-                  touch-target h-16 rounded-2xl font-semibold text-xl
+                  touch-target h-16 rounded-2xl font-semibold text-xl relative z-20
                   ${number === '⌫' 
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600' 
-                    : 'btn-luxury text-white'
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 active:scale-95' 
+                    : 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white active:scale-95 shadow-luxury-button'
                   }
                   ${!number ? 'invisible' : ''}
-                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
-                  transition-all duration-200 shadow-luxury-sm
-                  active:shadow-luxury
+                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-luxury-lg transition-all duration-200'}
+                  cursor-pointer select-none
                 `}
+                style={{ pointerEvents: 'auto' }}
               >
                 {number}
               </button>
