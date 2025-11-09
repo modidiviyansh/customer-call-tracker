@@ -18,7 +18,7 @@ const DebugPanel = ({
       <div className="fixed top-4 right-4 z-50">
         <button
           onClick={() => localStorage.setItem('debug_mode', 'true')}
-          className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+          className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-luxury hover:bg-red-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
         >
           🐛 Enable Debug
         </button>
@@ -39,12 +39,12 @@ const DebugPanel = ({
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-80 glass-card p-4 text-sm">
+    <div className="fixed top-4 right-4 z-50 w-80 glass-card-gradient p-4 text-sm shadow-gradient hover:shadow-luxury-lg hover:scale-105 transition-all duration-300">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-slate-800">🔧 Debug Panel</h3>
         <button
           onClick={() => localStorage.setItem('debug_mode', 'false')}
-          className="text-slate-500 hover:text-slate-700"
+          className="text-slate-500 hover:text-slate-700 p-1 rounded-full hover:bg-white/50 transition-all duration-300 hover:scale-110"
         >
           ✕
         </button>
@@ -110,7 +110,7 @@ const DebugPanel = ({
       <div className="space-y-2">
         <button
           onClick={() => window.location.reload()}
-          className="w-full bg-blue-500 text-white py-1 px-2 rounded text-xs hover:bg-blue-600"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded-full text-sm font-medium shadow-luxury hover:bg-blue-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
         >
           🔄 Reload Page
         </button>
@@ -120,7 +120,7 @@ const DebugPanel = ({
             localStorage.clear();
             window.location.reload();
           }}
-          className="w-full bg-red-500 text-white py-1 px-2 rounded text-xs hover:bg-red-600"
+          className="w-full bg-red-500 text-white py-2 px-4 rounded-full text-sm font-medium shadow-luxury hover:bg-red-600 hover:scale-105 transition-all duration-300 min-h-[44px] touch-manipulation"
         >
           🗑️ Clear Storage & Reload
         </button>

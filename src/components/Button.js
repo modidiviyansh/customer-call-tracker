@@ -9,12 +9,14 @@ const Button = ({
   disabled = false,
   ...props 
 }) => {
-  const baseClasses = 'font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses = 'font-semibold rounded-2xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[44px] touch-manipulation';
   
   const variants = {
-    primary: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 focus:ring-purple-500',
-    secondary: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-500',
-    outline: 'border-2 border-purple-500 text-purple-500 hover:bg-purple-50 focus:ring-purple-500'
+    primary: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 focus:ring-purple-500 shadow-luxury-button hover:shadow-luxury-lg hover:scale-105',
+    secondary: 'bg-white/80 backdrop-blur-lg shadow-xl text-gray-700 border border-white/20 hover:bg-white/90 hover:shadow-luxury-lg hover:scale-105 focus:ring-gray-500',
+    outline: 'border-2 border-transparent bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-gray-700 hover:shadow-luxury-lg hover:scale-105 focus:ring-purple-500 relative overflow-hidden',
+    luxury: 'bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-white shadow-gradient hover:shadow-luxury-lg hover:scale-105 focus:ring-purple-500',
+    'luxury-outline': 'border-2 border-gradient-to-r from-[#FFD700] to-[#09c6f9] text-gray-700 bg-white/80 backdrop-blur-lg hover:shadow-luxury-lg hover:scale-105 focus:ring-purple-500'
   };
   
   const sizes = {
@@ -27,8 +29,9 @@ const Button = ({
   
   return (
     <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.05, y: -2 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       className={classes}
       disabled={disabled}
       {...props}

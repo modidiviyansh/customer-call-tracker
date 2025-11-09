@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Phone, User, Calendar, AlertCircle, AlertTriangle } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import CallDisposition from './CallDisposition';
@@ -114,6 +115,7 @@ const Reminders = ({ agentPin }) => {
     return colors[status] || 'text-gray-600 bg-gray-50 border-gray-200';
   };
 
+
   const formatStatus = (status) => {
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
@@ -139,19 +141,19 @@ const Reminders = ({ agentPin }) => {
   const currentReminders = reminders[activeTab] || [];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-luxury font-semibold text-slate-800">
+        <h2 className="text-xl font-luxury font-semibold text-slate-800">
           Call Reminders
         </h2>
-        <div className="text-sm text-slate-600">
+        <div className="text-lg text-slate-600 font-medium">
           {currentReminders.length} reminder{currentReminders.length !== 1 ? 's' : ''}
         </div>
       </div>
 
-      {/* Reminder Tabs */}
+      {/* Reminder Tabs - Mobile First */}
       <div className="flex justify-center">
-        <div className="glass-card p-2 flex space-x-2">
+        <div className="glass-card-gradient p-2 flex space-x-2 overflow-x-auto shadow-gradient hover:shadow-luxury-lg hover:scale-105 transition-all duration-300">
           {reminderTabs.map((tab) => {
             const IconComponent = tab.icon;
             return (
@@ -159,17 +161,18 @@ const Reminders = ({ agentPin }) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all
+                  flex items-center space-x-2 px-4 py-3 rounded-full font-medium transition-all duration-300
+                  min-h-[44px] whitespace-nowrap touch-manipulation
                   ${activeTab === tab.id
-                    ? 'bg-primary-500 text-white shadow-luxury'
-                    : 'text-slate-600 hover:text-slate-800 hover:bg-white/50'
+                    ? 'bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-white shadow-luxury-lg scale-105'
+                    : 'text-slate-600 hover:text-slate-800 hover:bg-white/80 hover:scale-105'
                   }
                 `}
               >
                 <IconComponent className="w-4 h-4" />
-                <span>{tab.label}</span>
+                <span className="text-sm">{tab.label}</span>
                 {tab.data.length > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">
                     {tab.data.length}
                   </span>
                 )}
@@ -180,57 +183,65 @@ const Reminders = ({ agentPin }) => {
       </div>
 
       {currentReminders.length === 0 ? (
-        <div className="text-center py-12">
-          <Clock className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-600 mb-2">
+        <motion.div
+          className="text-center py-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-slate-600 mb-2">
             {activeTab === 'overdue' && 'No overdue reminders'}
             {activeTab === 'today' && 'No reminders for today'}
             {activeTab === 'upcoming' && 'No upcoming reminders this week'}
           </h3>
-          <p className="text-slate-500">
+          <p className="text-base text-slate-500">
             {activeTab === 'overdue' && 'Great! All past reminders have been addressed.'}
             {activeTab === 'today' && 'No calls scheduled for today.'}
             {activeTab === 'upcoming' && 'No calls scheduled for the coming week.'}
           </p>
-        </div>
+        </motion.div>
       ) : (
-        <div className="space-y-4">
-          {currentReminders.map((reminder) => {
+        <div className="flex flex-col gap-y-4">
+          {currentReminders.map((reminder, index) => {
             const StatusIcon = getStatusIcon(reminder.call_status);
             return (
-              <div
+              <motion.div
                 key={reminder.id}
-                className="card-luxury-minimal p-6 hover:shadow-luxury transition-all duration-300"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
+                className="glass-card-gradient p-6 hover:shadow-luxury-lg hover:scale-105 transition-all duration-300 shadow-gradient"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
+                    <div className="flex items-center space-x-3 mb-4">
                       <StatusIcon className="w-5 h-5 text-slate-600" />
                       <h3 className="text-lg font-semibold text-slate-800">
                         {reminder.fcm_customers?.name}
                       </h3>
                       <span className={`
-                        px-3 py-1 rounded-full text-xs font-medium border
+                        px-3 py-1 rounded-full text-xs font-medium border shadow-sm
                         ${getStatusColor(reminder.call_status)}
                       `}>
                         {formatStatus(reminder.call_status)}
                       </span>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2 text-sm text-slate-600">
+                    <div className="flex flex-col gap-y-2">
+                      <div className="flex items-center space-x-2 text-lg text-slate-600">
                         <Phone className="w-4 h-4" />
                         <span>{reminder.fcm_customers?.mobile_number || 'No phone'}</span>
                       </div>
 
                       {reminder.remarks && (
-                        <div className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3">
+                        <div className="text-lg text-slate-700 bg-slate-50 rounded-lg p-3">
                           <p className="font-medium text-slate-800 mb-1">Notes:</p>
                           <p>{reminder.remarks}</p>
                         </div>
                       )}
 
-                      <div className="flex items-center space-x-2 text-sm text-slate-500">
+                      <div className="flex items-center space-x-2 text-lg text-slate-500">
                         <Calendar className="w-4 h-4" />
                         <span>
                           {activeTab === 'overdue' && 'Was due: '}
@@ -240,7 +251,7 @@ const Reminders = ({ agentPin }) => {
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-2 text-sm text-slate-500">
+                      <div className="flex items-center space-x-2 text-lg text-slate-500">
                         <Clock className="w-4 h-4" />
                         <span>Last called: {new Date(reminder.call_date).toLocaleDateString()}</span>
                       </div>
@@ -253,13 +264,13 @@ const Reminders = ({ agentPin }) => {
                         setSelectedCustomer(reminder.fcm_customers);
                         setShowDisposition(true);
                       }}
-                      className="btn-luxury text-sm"
+                      className="btn-luxury text-sm font-semibold min-h-[44px] px-6 rounded-full hover:scale-105 transition-all duration-300 touch-manipulation"
                     >
-                      {activeTab === 'overdue' ? 'Call Now' : 'Call Now'}
+                      Call Now
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

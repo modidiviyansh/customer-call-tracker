@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Shield, TrendingUp, Users, Bell, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
 import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition } from '../components';
+import { Reminders, CallDisposition, SkeletonLoader, ToastContainer, useToast } from '../components';
 import { validateIndianMobile, validateIndianPIN, formatIndianMobile } from '../utils/validation';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -20,6 +21,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
   const { customers, searchQuery, setSearchQuery, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
+  const { toasts, success, error, warning, info, removeToast } = useToast();
 
   console.log('Dashboard render - agentPin:', agentPin, 'isAuthenticated:', isAuthenticated);
 
@@ -102,10 +104,10 @@ const Dashboard = ({ agentPin, onSignOut }) => {
         if (result.error) {
           throw result.error;
         }
-        alert('Customer deleted successfully!');
+        success('Customer deleted successfully!');
       } catch (error) {
         console.error('Error deleting customer:', error);
-        alert('Error deleting customer. Please try again.');
+        error('Error deleting customer. Please try again.');
       }
     }
   };
@@ -189,7 +191,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       console.log('Customer activity logged:', auditLog);
 
       // Success feedback
-      alert(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
+      success(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
 
       setShowCustomerForm(false);
       setEditingCustomer(null);
@@ -197,7 +199,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       setFormErrors({});
     } catch (error) {
       console.error('Error saving customer:', error);
-      alert('Error saving customer. Please try again.');
+      error('Error saving customer. Please try again.');
     }
   };
 
@@ -215,14 +217,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      completed: 'text-green-600 bg-green-50 border-green-200',
-      no_answer: 'text-gray-600 bg-gray-50 border-gray-200',
-      busy: 'text-orange-600 bg-orange-50 border-orange-200',
-      follow_up: 'text-blue-600 bg-blue-50 border-blue-200',
-      invalid: 'text-red-600 bg-red-50 border-red-200',
-      not_interested: 'text-red-500 bg-red-50 border-red-200',
+      completed: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/25',
+      no_answer: 'bg-gradient-to-r from-slate-400 to-slate-500 text-white shadow-lg shadow-slate-500/25',
+      busy: 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-500/25',
+      follow_up: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25',
+      invalid: 'bg-gradient-to-r from-red-400 to-rose-500 text-white shadow-lg shadow-red-500/25',
+      not_interested: 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/25',
     };
-    return colors[status] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return colors[status] || 'bg-gradient-to-r from-slate-400 to-slate-500 text-white shadow-lg shadow-slate-500/25';
   };
 
   const renderCustomers = () => (
@@ -241,7 +243,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
         </div>
         <button
           onClick={handleCreateCustomer}
-          className="btn-luxury flex items-center space-x-2"
+          className="glass-card-gradient px-6 py-3 hover:scale-105 transition-all duration-300 flex items-center space-x-2 text-slate-800 font-semibold min-h-[44px] touch-manipulation"
         >
           <Plus className="w-4 h-4" />
           <span>Add Customer</span>
@@ -261,10 +263,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             </p>
           </div>
         ) : (
-          customers.map((customer) => (
-            <div
+          customers.map((customer, index) => (
+            <motion.div
               key={customer.id}
-              className="card-luxury-minimal p-6 hover:shadow-luxury transition-all duration-300"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -297,49 +302,76 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <button
+                <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
+                  {/* Call Now Button - Full width on mobile */}
+                  <motion.button
                     onClick={() => handleCallCustomer(customer)}
-                    className="btn-luxury text-sm flex items-center space-x-1"
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
                     title="Open phone dialer"
                   >
-                    <PhoneCall className="w-3 h-3" />
-                    <span>Call</span>
-                  </button>
-                  <button
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                    </motion.div>
+                    <span>Call Now</span>
+                  </motion.button>
+
+                  {/* Log Call Button - Full width on mobile */}
+                  <motion.button
                     onClick={() => handleDispositionCustomer(customer)}
-                    className="btn-luxury-outline text-sm flex items-center space-x-1"
+                    className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center justify-center space-x-2 min-h-[48px] touch-manipulation"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
                     title="Log call disposition"
                   >
-                    <Phone className="w-3 h-3" />
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                    >
+                      <Phone className="w-4 h-4" />
+                    </motion.div>
                     <span>Log Call</span>
-                  </button>
-                  <button
-                    onClick={() => handleViewProfile(customer)}
-                    className="btn-luxury-outline text-sm flex items-center space-x-1"
-                    title="View customer profile"
-                  >
-                    <User className="w-3 h-3" />
-                    <span>Profile</span>
-                  </button>
-                  <button
-                    onClick={() => handleViewCallHistory(customer)}
-                    className="btn-luxury-outline text-sm flex items-center space-x-1"
-                    title="View call history"
-                  >
-                    <History className="w-3 h-3" />
-                    <span>History</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeleteCustomer(customer.id)}
-                    className="btn-luxury-outline text-red-600 hover:bg-red-50 text-sm flex items-center space-x-1"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span>Delete</span>
-                  </button>
+                  </motion.button>
+
+                  {/* Secondary Actions */}
+                  <div className="flex space-x-2">
+                    <motion.button
+                      onClick={() => handleViewProfile(customer)}
+                      className="bg-glass/80 backdrop-blur-lg rounded-xl px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-sm flex items-center space-x-1 text-slate-800 min-h-[44px] touch-manipulation"
+                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.9)" }}
+                      whileTap={{ scale: 0.95 }}
+                      title="View customer profile"
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="hidden sm:inline">Profile</span>
+                    </motion.button>
+                    <motion.button
+                      onClick={() => handleViewCallHistory(customer)}
+                      className="bg-glass/80 backdrop-blur-lg rounded-xl px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-sm flex items-center space-x-1 text-slate-800 min-h-[44px] touch-manipulation"
+                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.9)" }}
+                      whileTap={{ scale: 0.95 }}
+                      title="View call history"
+                    >
+                      <History className="w-4 h-4" />
+                      <span className="hidden sm:inline">History</span>
+                    </motion.button>
+                    <motion.button
+                      onClick={() => handleDeleteCustomer(customer.id)}
+                      className="bg-glass/80 backdrop-blur-lg rounded-xl px-3 py-2 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-sm flex items-center space-x-1 text-red-600 min-h-[44px] touch-manipulation"
+                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.9)" }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Delete</span>
+                    </motion.button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))
         )}
       </div>
@@ -347,61 +379,82 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   );
 
   const renderOverview = () => (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-y-4">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 gap-4">
+        {statsLoading ? (
+          <SkeletonLoader type="stats" count={4} />
+        ) : (
+          <>
+            {/* Total Calls */}
+            <motion.div
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Phone className="w-6 h-6 text-primary-500" />
+                <div className="text-xl font-bold text-primary-600">{stats.totalCalls}</div>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Total Calls</h3>
+              <p className="text-slate-600 text-sm">All-time record</p>
+            </motion.div>
 
-        {/* Total Calls */}
-        <div className="card-luxury animate-fade-in-up">
-          <div className="flex items-center justify-between mb-4">
-            <Phone className="w-8 h-8 text-primary-500" />
-            <div className="text-2xl font-bold text-primary-600">{stats.totalCalls}</div>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Total Calls</h3>
-          <p className="text-slate-600 text-sm">All-time record</p>
-        </div>
+            {/* Today's Calls */}
+            <motion.div
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <UserCheck className="w-6 h-6 text-secondary-500" />
+                <div className="text-xl font-bold text-secondary-600">{stats.todaysCalls}</div>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Today's Calls</h3>
+              <p className="text-slate-600 text-sm">Completed today</p>
+            </motion.div>
 
-        {/* Today's Calls */}
-        <div className="card-luxury animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex items-center justify-between mb-4">
-            <UserCheck className="w-8 h-8 text-secondary-500" />
-            <div className="text-2xl font-bold text-secondary-600">{stats.todaysCalls}</div>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Today's Calls</h3>
-          <p className="text-slate-600 text-sm">Completed today</p>
-        </div>
+            {/* Reminders */}
+            <motion.div
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Clock className="w-6 h-6 text-luxury-gold" />
+                <div className="text-xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Reminders</h3>
+              <p className="text-slate-600 text-sm">Due today</p>
+            </motion.div>
 
-        {/* Reminders */}
-        <div className="card-luxury animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center justify-between mb-4">
-            <Clock className="w-8 h-8 text-luxury-gold" />
-            <div className="text-2xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Reminders</h3>
-          <p className="text-slate-600 text-sm">Due today</p>
-        </div>
-
-        {/* Active Customers */}
-        <div className="card-luxury animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <div className="flex items-center justify-between mb-4">
-            <Users className="w-8 h-8 text-slate-600" />
-            <div className="text-2xl font-bold text-slate-600">{customers.length}</div>
-          </div>
-          <h3 className="text-lg font-semibold text-slate-800">Customers</h3>
-          <p className="text-slate-600 text-sm">Total in system</p>
-        </div>
+            {/* Active Customers */}
+            <motion.div
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <Users className="w-6 h-6 text-slate-600" />
+                <div className="text-xl font-bold text-slate-600">{customers.length}</div>
+              </div>
+              <h3 className="text-lg font-semibold text-slate-800">Customers</h3>
+              <p className="text-slate-600 text-sm">Total in system</p>
+            </motion.div>
+          </>
+        )}
       </div>
 
       {/* Call Status Breakdown */}
-      <div className="card-luxury-minimal">
-        <h3 className="text-xl font-luxury font-semibold text-slate-800 mb-6">Call Status Overview</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
+        <h3 className="text-xl font-luxury font-semibold text-slate-800 mb-4">Call Status Overview</h3>
+        <div className="grid grid-cols-3 gap-3">
           {Object.entries(stats.callStatusBreakdown).map(([status, count]) => (
             <div key={status} className="text-center">
-              <div className={`px-3 py-2 rounded-lg border text-sm font-medium ${getStatusColor(status)}`}>
+              <div className={`px-3 py-2 rounded-full border text-sm font-medium ${getStatusColor(status)} hover:scale-105 transition-all duration-300 shadow-sm`}>
                 {formatCallStatus(status)}
               </div>
-              <div className="text-2xl font-bold text-slate-800 mt-2">{count}</div>
+              <div className="text-xl font-bold text-slate-800 mt-2">{count}</div>
             </div>
           ))}
         </div>
@@ -410,26 +463,26 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   );
 
   const renderTodaysCalls = () => (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-luxury font-semibold text-slate-800">Today's Call Activity</h2>
-        <div className="text-sm text-slate-600">
+        <h2 className="text-xl font-luxury font-semibold text-slate-800">Today's Call Activity</h2>
+        <div className="text-lg text-slate-600 font-medium">
           {callRecords.length} call{callRecords.length !== 1 ? 's' : ''} logged
         </div>
       </div>
 
       {callRecords.length === 0 ? (
-        <div className="text-center py-12">
-          <Phone className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-600 mb-2">No calls logged today</h3>
-          <p className="text-slate-500">Start calling customers to build your activity.</p>
+        <div className="text-center py-8">
+          <Phone className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-slate-600 mb-2">No calls logged today</h3>
+          <p className="text-base text-slate-500">Start calling customers to build your activity.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-y-4">
           {callRecords.map((record) => (
             <div
               key={record.id}
-              className="card-luxury-minimal p-6 hover:shadow-luxury transition-all duration-300"
+              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -437,15 +490,20 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     <h3 className="text-lg font-semibold text-slate-800">
                       {record.fcm_customers?.name}
                     </h3>
-                    <span className={`
-                      px-3 py-1 rounded-full text-xs font-medium border
-                      ${getStatusColor(record.call_status)}
-                    `}>
+                    <motion.span
+                      className={`
+                        px-3 py-1.5 rounded-full text-xs font-semibold border-0
+                        ${getStatusColor(record.call_status)}
+                      `}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                    >
                       {formatCallStatus(record.call_status)}
-                    </span>
+                    </motion.span>
                   </div>
 
-                  <div className="space-y-2 text-sm text-slate-600">
+                  <div className="flex flex-col gap-y-2 text-sm text-slate-600">
                     <div>Call time: {new Date(record.call_date).toLocaleTimeString()}</div>
                     {record.remarks && (
                       <div className="bg-slate-50 rounded-lg p-3">
@@ -461,14 +519,21 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <button
+                <div className="flex space-x-2 ml-3">
+                  <motion.button
                     onClick={() => handleCallCustomer(record.fcm_customers)}
-                    className="btn-luxury text-sm flex items-center space-x-1"
+                    className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-2 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-1 min-h-[44px] touch-manipulation"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <PhoneCall className="w-3 h-3" />
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                    </motion.div>
                     <span>Call Again</span>
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </div>
@@ -480,36 +545,36 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
 
   const renderActivityLogs = () => (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-luxury font-semibold text-slate-800">Activity Logs</h2>
-        <div className="text-sm text-slate-600">
+        <h2 className="text-xl font-luxury font-semibold text-slate-800">Activity Logs</h2>
+        <div className="text-lg text-slate-600 font-medium">
           System activities and profile changes
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex flex-col gap-y-4">
         {/* Customer Edit Logs */}
-        <div className="card-luxury-minimal p-6">
+        <div className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Customer Profile Changes</h3>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-y-3">
             {/* This would be populated from a customer_audit_logs table in a real implementation */}
-            <div className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-start space-x-3 p-3 bg-slate-50/80 rounded-lg">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div className="flex-1">
-                <p className="text-sm text-slate-700">
+                <p className="text-lg text-slate-700">
                   <span className="font-medium">John Smith</span> - Mobile number updated from +91-9876543210 to +91-9876543211
                 </p>
-                <p className="text-xs text-slate-500 mt-1">2 hours ago</p>
+                <p className="text-sm text-slate-500 mt-1">2 hours ago</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3 p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-start space-x-3 p-3 bg-slate-50/80 rounded-lg">
               <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
               <div className="flex-1">
-                <p className="text-sm text-slate-700">
+                <p className="text-lg text-slate-700">
                   <span className="font-medium">Sarah Johnson</span> - Address updated: Added PIN code 110001
                 </p>
-                <p className="text-xs text-slate-500 mt-1">1 day ago</p>
+                <p className="text-sm text-slate-500 mt-1">1 day ago</p>
               </div>
             </div>
           </div>
@@ -520,83 +585,128 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
-      {/* Navigation */}
-      <nav className="nav-luxury px-4 py-4">
-        <div className="luxury-container flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <Shield className="w-8 h-8 text-primary-500 animate-glow" />
-            <div>
-              <h1 className="text-2xl font-luxury font-semibold text-slate-800">
-                Call Tracker Pro
-              </h1>
-              <div className="text-sm text-slate-600">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={onSignOut}
-            className="btn-luxury-outline flex items-center space-x-2 text-sm"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </nav>
-
       {/* Main Content */}
-      <div className="luxury-container luxury-section">
-        
-        {/* Welcome Header */}
-        <div className="text-center animate-fade-in-up mb-8">
-          <h2 className="text-4xl font-luxury font-semibold text-slate-800 mb-4">
-            Agent Dashboard
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Track your calls, manage customers, and stay on top of reminders
-          </p>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="glass-card p-2 flex space-x-2">
-            {tabs.map((tab) => {
-              const IconComponent = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
-                    flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all
-                    ${activeTab === tab.id
-                      ? 'bg-primary-500 text-white shadow-luxury'
-                      : 'text-slate-600 hover:text-slate-800 hover:bg-white/50'
-                    }
-                  `}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
+      <div className="w-full max-w-md mx-auto px-4 py-2">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <Shield className="w-6 h-6 text-primary-500 animate-glow" />
+            <h1 className="text-xl font-luxury font-semibold text-slate-800">
+              Call Tracker Pro
+            </h1>
+          </div>
+          <div className="text-lg text-slate-600 font-medium">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
             })}
           </div>
         </div>
 
+        {/* Tab Navigation - Mobile Bottom Sticky */}
+        <motion.div
+          className="fixed bottom-0 left-0 right-0 z-40 bg-glass/90 backdrop-blur-lg border-t shadow-xl flex"
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <div className="flex justify-around w-full p-2">
+            {tabs.map((tab, index) => {
+              const IconComponent = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    relative flex flex-col items-center justify-center space-y-1
+                    px-4 py-3 rounded-full font-medium transition-all
+                    min-h-[48px] min-w-[48px] w-full touch-manipulation
+                    ${isActive
+                      ? 'text-white'
+                      : 'text-slate-600 hover:text-slate-800'
+                    }
+                  `}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  {/* Animated bubble background */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    initial={false}
+                    animate={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, #FFD700 0%, #09c6f9 100%)'
+                        : 'transparent',
+                      scale: isActive ? 1 : 0.8,
+                    }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                  />
+
+                  {/* Icon with gradient fill when active */}
+                  <motion.div
+                    animate={{
+                      color: isActive ? '#ffffff' : '#64748b',
+                      filter: isActive ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.3))' : 'none'
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <IconComponent className="w-7 h-7" />
+                  </motion.div>
+
+                  <motion.span
+                    className="text-xs font-medium"
+                    animate={{
+                      color: isActive ? '#ffffff' : '#64748b'
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {tab.label}
+                  </motion.span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
+
         {/* Tab Content */}
-        <div className="animate-fade-in-up">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="pb-20"
+        >
           {activeTab === 'customers' && renderCustomers()}
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'reminders' && <Reminders agentPin={agentPin} />}
           {activeTab === 'calls' && renderTodaysCalls()}
           {activeTab === 'logs' && renderActivityLogs()}
-        </div>
+        </motion.div>
       </div>
+
+      {/* Mobile Sign Out Button */}
+      <motion.div
+        className="fixed top-4 right-4 z-50 md:hidden"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
+      >
+        <motion.button
+          onClick={onSignOut}
+          className="bg-white/90 backdrop-blur-lg p-3 rounded-full shadow-lg border border-white/20 min-h-[48px] min-w-[48px] flex items-center justify-center touch-manipulation"
+          whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <LogOut className="w-5 h-5 text-slate-600" />
+        </motion.button>
+      </motion.div>
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Call Disposition Modal */}
       {showDisposition && selectedCustomer && (
@@ -613,8 +723,20 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
       {/* Customer Profile Modal */}
       {showCustomerProfile && editingCustomer && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
+        <motion.div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 50 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+          >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -639,64 +761,66 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
             <div className="space-y-6">
               {/* Customer Info Display */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     Customer Name
                   </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800 font-medium">{editingCustomer.name}</p>
+                  <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                    <p className="text-slate-800 font-medium text-lg">{editingCustomer.name}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     Mobile Number
                   </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800 font-medium">{editingCustomer.mobile_number}</p>
+                  <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                    <p className="text-slate-800 font-medium text-lg">{editingCustomer.mobile_number}</p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     Street Address
                   </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800">{editingCustomer.address_details?.street || 'Not provided'}</p>
+                  <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                    <p className="text-slate-800 text-lg">{editingCustomer.address_details?.street || 'Not provided'}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-base font-semibold text-slate-800 mb-3">
+                      City
+                    </label>
+                    <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                      <p className="text-slate-800 text-lg">{editingCustomer.address_details?.city || 'Not provided'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-semibold text-slate-800 mb-3">
+                      State
+                    </label>
+                    <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                      <p className="text-slate-800 text-lg">{editingCustomer.address_details?.state || 'Not provided'}</p>
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    City
-                  </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800">{editingCustomer.address_details?.city || 'Not provided'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    State
-                  </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800">{editingCustomer.address_details?.state || 'Not provided'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     PIN Code
                   </label>
-                  <div className="p-3 bg-slate-50 rounded-lg border">
-                    <p className="text-slate-800">{editingCustomer.address_details?.zipCode || 'Not provided'}</p>
+                  <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
+                    <p className="text-slate-800 text-lg">{editingCustomer.address_details?.zipCode || 'Not provided'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Customer Stats */}
-              <div className="card-luxury-minimal p-4">
+              <div className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4">Customer Statistics</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -734,30 +858,46 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
-                <button
+                <motion.button
                   onClick={() => handleViewCallHistory(editingCustomer)}
-                  className="btn-luxury-outline flex items-center space-x-1"
+                  className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] touch-manipulation"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <History className="w-4 h-4" />
                   <span>View History</span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   onClick={handleEditFromProfile}
-                  className="btn-luxury flex items-center space-x-1"
+                  className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] touch-manipulation"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Edit className="w-4 h-4" />
                   <span>Edit Profile</span>
-                </button>
+                </motion.button>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Customer Form Modal */}
       {showCustomerForm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
+        <motion.div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 50 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+          >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -785,47 +925,47 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             <form onSubmit={handleCustomerFormSubmit} className="space-y-6">
               {/* Customer Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-base font-semibold text-slate-800 mb-3">
                   Customer Name *
                 </label>
                 <input
                   type="text"
                   value={customerForm.name}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                  className={`input-luxury w-full ${formErrors.name ? 'border-red-500' : ''}`}
+                  className={`w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg font-medium min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${formErrors.name ? 'border-red-500' : 'border-slate-300'}`}
                   placeholder="Enter customer name"
                   required
                 />
                 {formErrors.name && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                  <p className="text-red-500 text-sm mt-2 font-medium">{formErrors.name}</p>
                 )}
               </div>
 
               {/* Mobile Number */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-base font-semibold text-slate-800 mb-3">
                   Mobile Number *
                 </label>
                 <input
                   type="tel"
                   value={customerForm.mobile}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, mobile: e.target.value }))}
-                  className={`input-luxury w-full ${formErrors.mobile ? 'border-red-500' : ''}`}
+                  className={`w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg font-medium min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${formErrors.mobile ? 'border-red-500' : 'border-slate-300'}`}
                   placeholder="Enter 10-digit mobile number (e.g., 9876543210)"
                   required
                 />
                 {formErrors.mobile && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.mobile}</p>
+                  <p className="text-red-500 text-sm mt-2 font-medium">{formErrors.mobile}</p>
                 )}
-                <p className="text-slate-500 text-xs mt-1">
+                <p className="text-slate-600 text-sm mt-2">
                   Enter number with or without +91 prefix
                 </p>
               </div>
 
               {/* Address Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     Street Address
                   </label>
                   <input
@@ -838,51 +978,53 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         street: e.target.value
                       }
                     }))}
-                    className="input-luxury w-full"
+                    className="w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 border-slate-300"
                     placeholder="123 Main St"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={customerForm.address_details?.city || ''}
-                    onChange={(e) => setCustomerForm(prev => ({
-                      ...prev,
-                      address_details: {
-                        ...prev.address_details,
-                        city: e.target.value
-                      }
-                    }))}
-                    className="input-luxury w-full"
-                    placeholder="New York"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-base font-semibold text-slate-800 mb-3">
+                      City
+                    </label>
+                    <input
+                      type="text"
+                      value={customerForm.address_details?.city || ''}
+                      onChange={(e) => setCustomerForm(prev => ({
+                        ...prev,
+                        address_details: {
+                          ...prev.address_details,
+                          city: e.target.value
+                        }
+                      }))}
+                      className="w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 border-slate-300"
+                      placeholder="New York"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-base font-semibold text-slate-800 mb-3">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      value={customerForm.address_details?.state || ''}
+                      onChange={(e) => setCustomerForm(prev => ({
+                        ...prev,
+                        address_details: {
+                          ...prev.address_details,
+                          state: e.target.value
+                        }
+                      }))}
+                      className="w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 border-slate-300"
+                      placeholder="NY"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={customerForm.address_details?.state || ''}
-                    onChange={(e) => setCustomerForm(prev => ({
-                      ...prev,
-                      address_details: {
-                        ...prev.address_details,
-                        state: e.target.value
-                      }
-                    }))}
-                    className="input-luxury w-full"
-                    placeholder="NY"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-base font-semibold text-slate-800 mb-3">
                     PIN Code
                   </label>
                   <input
@@ -895,14 +1037,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         zipCode: e.target.value
                       }
                     }))}
-                    className={`input-luxury w-full ${formErrors.zipCode ? 'border-red-500' : ''}`}
+                    className={`w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${formErrors.zipCode ? 'border-red-500' : 'border-slate-300'}`}
                     placeholder="110001"
                     maxLength="6"
                   />
                   {formErrors.zipCode && (
-                    <p className="text-red-500 text-xs mt-1">{formErrors.zipCode}</p>
+                    <p className="text-red-500 text-sm mt-2 font-medium">{formErrors.zipCode}</p>
                   )}
-                  <p className="text-slate-500 text-xs mt-1">
+                  <p className="text-slate-600 text-sm mt-2">
                     6-digit Indian PIN code
                   </p>
                 </div>
@@ -910,7 +1052,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
               {/* Submit Actions */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
-                <button
+                <motion.button
                   type="button"
                   onClick={() => {
                     setShowCustomerForm(false);
@@ -918,27 +1060,45 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     setCustomerForm({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
                     setFormErrors({});
                   }}
-                  className="btn-luxury-outline"
+                  className="bg-glass/80 backdrop-blur-lg text-slate-800 rounded-xl px-4 py-3 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] touch-manipulation"
+                  whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.9)" }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  Cancel
-                </button>
-                <button
+                  <X className="w-4 h-4" />
+                  <span>Cancel</span>
+                </motion.button>
+                <motion.button
                   type="submit"
                   disabled={!customerForm.name.trim() || !customerForm.mobile.trim()}
-                  className="btn-luxury disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-gradient-to-r from-blue-500 to-teal-400 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {editingCustomer ? 'Update Customer' : 'Add Customer'}
-                </button>
+                  <Plus className="w-4 h-4" />
+                  <span>{editingCustomer ? 'Update Customer' : 'Add Customer'}</span>
+                </motion.button>
               </div>
             </form>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Call History Modal */}
       {showCallHistory && selectedHistoryCustomer && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-fade-in-up">
+        <motion.div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 50 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+          >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
@@ -1014,8 +1174,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

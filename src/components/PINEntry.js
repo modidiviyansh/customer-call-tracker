@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Shield, Lock, Diamond } from 'lucide-react';
 import { usePinAuth } from '../hooks/usePinAuth';
 
@@ -81,14 +82,20 @@ const PINEntry = ({ onAuthenticated }) => {
       </div>
 
       {/* PIN Entry Card */}
-      <div 
+      <motion.div
         className={`
-          relative z-10 w-full max-w-sm mx-auto 
-          ${isCardExiting ? 'animate-scale-out' : 'animate-fade-in-up'}
+          relative z-10 w-full max-w-sm mx-auto
           ${isShaking ? 'animate-shake' : ''}
         `}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{
+          opacity: isCardExiting ? 0 : 1,
+          y: isCardExiting ? 20 : 0,
+          scale: isCardExiting ? 0.8 : 1
+        }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <div className="glass-card p-8 space-y-8">
+        <div className="glass-card-gradient p-8 space-y-8 shadow-gradient hover:shadow-luxury-lg hover:scale-105 transition-all duration-300">
           {/* Header with luxury icons */}
           <div className="text-center space-y-4">
             <div className="flex justify-center space-x-2">
@@ -176,7 +183,7 @@ const PINEntry = ({ onAuthenticated }) => {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

@@ -36,6 +36,7 @@ module.exports = {
           gold: '#D4AF37', // Rich gold
           'gold-light': '#F4E4BC',
           'gold-dark': '#B8941F',
+          'gold-pure': '#FFD700', // Pure gold for gradient borders
           diamond: '#F8FAFC', // Diamond white
           silver: '#E2E8F0',
           platinum: '#94A3B8',
@@ -68,6 +69,8 @@ module.exports = {
         'luxury-card': '0 8px 32px rgba(0, 124, 240, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
         'luxury-button': '0 4px 16px rgba(0, 124, 240, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1)',
         'glass': 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 3px rgba(0, 0, 0, 0.12)',
+        'gradient-border': '0 4px 40px rgba(36, 37, 130, 0.08)', // Subtle inner/outer shadow for lifted effect
+        'hover-lift': '0 8px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1)', // Enhanced hover shadow
       },
       backdropBlur: {
         'xs': '2px',
@@ -120,6 +123,8 @@ module.exports = {
         'gold-gradient': 'linear-gradient(135deg, #f4e4bc 0%, #d4af37 50%, #b8941f 100%)',
         'diamond-gradient': 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
         'shimmer-gradient': 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+        'gradient-border-gold-blue': 'linear-gradient(90deg, #FFD700 0%, #09c6f9 100%)', // Gold to blue gradient
+        'gradient-border': 'linear-gradient(90deg, #FFD700 0%, #09c6f9 100%)',
       },
       screens: {
         'xs': '475px',
