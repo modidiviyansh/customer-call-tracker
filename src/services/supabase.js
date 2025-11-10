@@ -1,18 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
-
-if (!supabaseUrl) {
-  throw new Error('Missing REACT_APP_SUPABASE_URL environment variable')
-}
-
-if (!supabaseAnonKey) {
-  throw new Error('Missing REACT_APP_SUPABASE_ANON_KEY environment variable')
-}
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || ''
 
 // Create Supabase client with modern session strategies
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Use empty strings if env vars are missing to prevent crashes
+export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder-key', {
   auth: {
     // Enable session persistence across page reloads
     persistSession: true,
@@ -53,6 +46,13 @@ export const isAuthenticated = async () => {
 export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   return user
+}
+
+// Check if Supabase is properly configured
+export const isSupabaseConfigured = () => {
+  return !!(supabaseUrl && supabaseAnonKey && 
+            supabaseUrl !== 'https://placeholder.supabase.co' && 
+            supabaseAnonKey !== 'placeholder-key')
 }
 
 // Export default client for easy importing

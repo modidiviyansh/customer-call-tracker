@@ -4,6 +4,7 @@ import { Dashboard } from './pages';
 import { ErrorBoundary, PINEntry, DebugPanel } from './components';
 import { usePinAuth } from './hooks/usePinAuth';
 import { debugLog } from './utils/mockData';
+import { isSupabaseConfigured } from './services/supabase';
 import './App.css';
 
 // Create a client
@@ -73,6 +74,27 @@ function App() {
   }, [isAuthenticated]);
 
   console.log('App render - isAuthenticated:', isAuthenticated, 'currentAgentPin:', currentAgentPin);
+
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-teal-50">
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h1>
+          <p className="text-gray-700 mb-4">
+            Supabase environment variables are not configured. Please set the following GitHub Secrets:
+          </p>
+          <ul className="list-disc list-inside text-gray-600 mb-4 space-y-2">
+            <li><code className="bg-gray-100 px-2 py-1 rounded">REACT_APP_SUPABASE_URL</code></li>
+            <li><code className="bg-gray-100 px-2 py-1 rounded">REACT_APP_SUPABASE_ANON_KEY</code></li>
+          </ul>
+          <p className="text-sm text-gray-500">
+            Go to: Repository Settings → Secrets and variables → Actions
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
