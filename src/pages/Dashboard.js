@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Shield, TrendingUp, Users, Bell, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
+import { LogOut, Shield, TrendingUp, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
 import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
 import { usePinAuth } from '../hooks/usePinAuth';
 import { Reminders, CallDisposition, SkeletonLoader, ToastContainer, useToast } from '../components';
@@ -21,7 +21,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
   const { customers, searchQuery, setSearchQuery, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
-  const { toasts, success, error, warning, info, removeToast } = useToast();
+  const { toasts, success, removeToast } = useToast();
 
   console.log('Dashboard render - agentPin:', agentPin, 'isAuthenticated:', isAuthenticated);
 
@@ -40,6 +40,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     } else {
       console.log('Dashboard useEffect - conditions not met:', { isAuthenticated, agentPin });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, agentPin]);
 
   const handleCallCustomer = (customer) => {
