@@ -1,15 +1,8 @@
-[providers]
-node = "18"
+[node]
+version = "18"
 
-[variables]
-NPM_CONFIG_PRODUCTION = "false"
-NODE_ENV = "production"
+[static]
+publish = "build"
 
-[phases.build]
-cmds = [
-    "npm ci --only=production",
-    "npm run build"
-]
-
-[phases.start]
-cmd = "npx serve -s build -l $PORT"
+[start]
+cmd = "npx serve -s build -p $PORT"
