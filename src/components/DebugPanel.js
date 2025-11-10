@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bug, X, Zap, Mouse, Phone, User, Clock } from 'lucide-react';
+import { Bug, X, Zap, Mouse } from 'lucide-react';
 
 const DebugPanel = ({ isOpen, onClose, lastAction, customerData, reminders, callRecords }) => {
   const [events, setEvents] = useState([]);

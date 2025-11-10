@@ -3,16 +3,20 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY
 
-if (!supabaseUrl) {
-  throw new Error('Missing REACT_APP_SUPABASE_URL environment variable')
-}
-
-if (!supabaseAnonKey) {
-  throw new Error('Missing REACT_APP_SUPABASE_ANON_KEY environment variable')
+// Log configuration status (only in development or if missing)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('⚠️ Supabase environment variables are missing:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey
+  });
 }
 
 // Create Supabase client with modern session strategies
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Use placeholder values if env vars are missing to prevent crashes
+const finalUrl = supabaseUrl || 'https://placeholder.supabase.co'
+const finalKey = supabaseAnonKey || 'placeholder-key'
+
+export const supabase = createClient(finalUrl, finalKey, {
   auth: {
     // Enable session persistence across page reloads
     persistSession: true,
@@ -53,6 +57,24 @@ export const isAuthenticated = async () => {
 export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   return user
+}
+
+// Check if Supabase is properly configured
+export const isSupabaseConfigured = () => {
+  const isConfigured = !!(supabaseUrl && supabaseAnonKey && 
+            supabaseUrl !== 'https://placeholder.supabase.co' && 
+            supabaseAnonKey !== 'placeholder-key' &&
+            supabaseUrl.trim() !== '' &&
+            supabaseAnonKey.trim() !== '')
+  
+  if (!isConfigured) {
+    console.warn('⚠️ Supabase is not properly configured. Environment variables:', {
+      REACT_APP_SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
+      REACT_APP_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Set' : 'Missing'
+    });
+  }
+  
+  return isConfigured
 }
 
 // Export default client for easy importing

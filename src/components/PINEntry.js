@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Lock, Diamond } from 'lucide-react';
 import { usePinAuth } from '../hooks/usePinAuth';
@@ -22,7 +22,7 @@ const PINEntry = ({ onAuthenticated }) => {
     setPin(prev => prev.slice(0, -1));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (pin.length !== 4) return;
 
     const result = await validatePin(pin);
@@ -38,7 +38,7 @@ const PINEntry = ({ onAuthenticated }) => {
         onAuthenticated();
       }, 800);
     }
-  };
+  }, [pin, validatePin, onAuthenticated]);
 
   // Auto-submit when 4 digits are entered
   useEffect(() => {
