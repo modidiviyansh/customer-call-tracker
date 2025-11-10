@@ -72,6 +72,7 @@ export const useCustomers = () => {
 
   useEffect(() => {
     fetchCustomers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   const createCustomer = async (customerData) => {
@@ -423,6 +424,7 @@ export const useDashboardStats = (agentPin) => {
 
   useEffect(() => {
     fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentPin]);
 
   return {

@@ -33,11 +33,6 @@ const Reminders = ({ agentPin }) => {
       // Get dates
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayStr = today.toISOString().split('T')[0];
-
-      const nextWeek = new Date(today);
-      nextWeek.setDate(today.getDate() + 7);
-      const nextWeekStr = nextWeek.toISOString().split('T')[0];
 
       // Fetch all reminders for the agent with updated_at for latest selection
       const { data, error } = await supabase
@@ -157,16 +152,12 @@ const Reminders = ({ agentPin }) => {
     }
   };
 
-  const handleTimelineSubmit = () => {
-    setShowTimeline(false);
-    setTimelineCustomer(null);
-  };
 
   // Filter reminders by dispositions (multi-select)
   const getFilteredReminders = () => {
-    const currentReminders = reminders[activeTab] || [];
-    if (selectedDispositions.length === 0) return currentReminders;
-    return currentReminders.filter(reminder => selectedDispositions.includes(reminder.call_status));
+    const filteredReminders = reminders[activeTab] || [];
+    if (selectedDispositions.length === 0) return filteredReminders;
+    return filteredReminders.filter(reminder => selectedDispositions.includes(reminder.call_status));
   };
 
   const getStatusIcon = (status) => {
@@ -216,7 +207,6 @@ const Reminders = ({ agentPin }) => {
     { id: 'upcoming', label: 'This Week', icon: Calendar, color: 'text-green-600', data: reminders.upcoming }
   ];
 
-  const currentReminders = reminders[activeTab] || [];
 
   return (
     <div className="flex flex-col">

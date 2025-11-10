@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, CheckCircle, XCircle, Clock, Phone, UserX } from 'lucide-react';
 import { useCallRecords } from '../hooks/useCustomerData';
 

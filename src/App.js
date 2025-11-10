@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
 function App() {
   const { isAuthenticated, currentAgentPin, signOut } = usePinAuth();
   const [debugMode, setDebugMode] = useState(false);
-  const [debugState, setDebugState] = useState({
+  const [, setDebugState] = useState({
     supabaseConnected: true,
     customersLoaded: false,
     callRecordsLoaded: false,

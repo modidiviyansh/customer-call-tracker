@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Shield, TrendingUp, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
 import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
 import { usePinAuth } from '../hooks/usePinAuth';
 import { Reminders, CallDisposition, SkeletonLoader, ToastContainer, useToast } from '../components';
