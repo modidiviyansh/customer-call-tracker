@@ -66,40 +66,6 @@ A modern, responsive customer call management system built with React and Supaba
    ```
    The app will open at [http://localhost:3000](http://localhost:3000)
 
-## 🐳 Docker Deployment
-
-### Local Docker Test
-```bash
-# Build and run with environment file
-docker build -t customer-call-tracker .
-docker run -p 3000:80 --env-file .env customer-call-tracker
-```
-
-### Using Docker Compose
-```bash
-docker-compose up -d
-```
-
-## ☁️ Coolify Deployment
-
-This application is fully configured for Coolify deployment:
-
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Ready for Coolify deployment"
-   git push origin main
-   ```
-
-2. **Follow Deployment Guide**
-   See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed Coolify setup instructions
-
-3. **Quick Deployment Script**
-   ```bash
-   ./deploy.sh
-   ```
-   This script helps validate your environment and prepare for deployment
-
 ## 📁 Project Structure
 
 ```
@@ -124,10 +90,9 @@ customer-call-tracker/
 ├── database/              # Database schema and migrations
 │   ├── schema.sql         # Main database schema
 │   └── final_schema.sql   # Updated schema
-├── Dockerfile             # Docker container configuration
-├── nginx.conf             # Production web server config
-├── docker-compose.yml     # Docker Compose setup
-├── deploy.sh             # Deployment helper script
+├── .github/               # GitHub configuration
+│   └── workflows/         # GitHub Actions workflows
+│       └── deploy.yml     # GitHub Pages deployment workflow
 └── DEPLOYMENT.md         # Detailed deployment guide
 ```
 
@@ -144,11 +109,50 @@ npm run lint:fix   # Fix ESLint issues
 
 ### Deployment
 ```bash
-npm run build:prod     # Production build (no source maps)
-npm run docker:build   # Build Docker image
-npm run docker:run     # Run Docker container
-npm run docker:stop    # Stop Docker container
+npm run build:prod # Production build (no source maps)
+npm run deploy     # Deploy to GitHub Pages
 ```
+
+## 🌐 GitHub Pages Deployment
+
+This application is configured for automatic deployment to GitHub Pages using GitHub Actions.
+
+### Automatic Deployment (Recommended)
+
+1. **Enable GitHub Pages**
+   - Go to your repository Settings → Pages
+   - Under "Source", select "GitHub Actions"
+
+2. **Set up Secrets**
+   - Go to Settings → Secrets and variables → Actions
+   - Add the following secrets:
+     - `REACT_APP_SUPABASE_URL`: Your Supabase project URL
+     - `REACT_APP_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+
+3. **Deploy**
+   - Push to the `main` branch
+   - GitHub Actions will automatically build and deploy
+   - Your site will be available at: `https://modidiviyansh.github.io/customer-call-tracker`
+
+### Manual Deployment
+
+If you prefer to deploy manually:
+
+```bash
+# Build the project
+npm run build:prod
+
+# Deploy to GitHub Pages
+npm run deploy
+```
+
+This will create/update the `gh-pages` branch with your built files.
+
+### Important Notes
+
+- **Environment Variables**: For GitHub Pages, environment variables must be set as GitHub Secrets. They are injected during the build process.
+- **CORS Configuration**: Make sure your Supabase project allows requests from your GitHub Pages domain (`https://modidiviyansh.github.io`)
+- **Custom Domain**: You can set up a custom domain in GitHub Pages settings if needed
 
 ## 🎯 Key Components
 
@@ -184,45 +188,6 @@ REACT_APP_API_BASE_URL=https://your-api-domain.com
 3. Configure authentication policies
 4. Set up real-time subscriptions (optional)
 
-## 🚢 Deployment Options
-
-### Coolify (Recommended)
-- **GitHub Integration**: Automatic deployments on push
-- **Environment Management**: Built-in environment variable management
-- **SSL Certificates**: Automatic HTTPS with Let's Encrypt
-- **Health Checks**: Built-in monitoring and alerting
-
-### Manual Docker
-```bash
-# Build image
-docker build -t customer-call-tracker:latest .
-
-# Run with environment variables
-docker run -d \
-  -p 80:80 \
-  -e REACT_APP_SUPABASE_URL=your_url \
-  -e REACT_APP_SUPABASE_ANON_KEY=your_key \
-  --name customer-call-tracker \
-  customer-call-tracker:latest
-```
-
-### Traditional Hosting
-```bash
-# Build static files
-npm run build:prod
-
-# Upload build/ directory to your web server
-# Configure web server to serve index.html for all routes
-```
-
-## 🔒 Security Features
-
-- **Row Level Security**: Database-level access control
-- **Environment Variables**: Secure configuration management
-- **HTTPS Ready**: SSL/TLS configuration included
-- **Security Headers**: Nginx configuration with security headers
-- **CORS Configuration**: Proper cross-origin resource sharing
-
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -236,16 +201,6 @@ npm run build:prod
 - Verify URL and anon key are correct
 - Check RLS policies are configured
 - Ensure CORS is set up for your domain
-
-**Docker Issues**
-- Check port 80 is not in use
-- Verify environment variables are passed correctly
-- Review container logs: `docker logs customer-call-tracker`
-
-**Coolify Issues**
-- Ensure all required environment variables are set
-- Check build logs for specific error messages
-- Verify repository is accessible from Coolify
 
 ## 📝 License
 
@@ -268,4 +223,4 @@ For deployment support or questions:
 
 ---
 
-**Ready for deployment!** 🚀 This application includes all necessary configuration files for Coolify, Docker, and traditional hosting platforms.
+**Ready for deployment!** 🚀 This application includes all necessary configuration files for modern hosting platforms.
