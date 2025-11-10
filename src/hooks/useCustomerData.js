@@ -198,6 +198,26 @@ export const useCallRecords = () => {
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = usePinAuth();
 
+  // Helper function to deduplicate records by customer, keeping only the latest
+  const getLatestRecordsByCustomer = (records) => {
+    if (!records || !Array.isArray(records)) return [];
+    
+    const customerMap = new Map();
+    
+    // Group by customer_id and keep the most recent record
+    records.forEach(record => {
+      const customerId = record.customer_id;
+      if (!customerId) return;
+      
+      const existingRecord = customerMap.get(customerId);
+      if (!existingRecord || new Date(record.call_date) > new Date(existingRecord.call_date)) {
+        customerMap.set(customerId, record);
+      }
+    });
+    
+    return Array.from(customerMap.values());
+  };
+
   const fetchCallRecords = async (filters = {}) => {
     if (!isAuthenticated) return;
     
@@ -222,7 +242,8 @@ export const useCallRecords = () => {
           customer_id,
           fcm_customers (
             id,
-            name
+            name,
+            mobile_number
           )
         `)
         .order('call_date', { ascending: false });
@@ -247,8 +268,19 @@ export const useCallRecords = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setCallRecords(data || []);
-      debugLog('useCallRecords', 'Successfully fetched from Supabase', { count: data?.length || 0 });
+      
+      let records = data || [];
+      
+      // If latest_only filter is set, deduplicate by customer
+      if (filters.latest_only) {
+        records = getLatestRecordsByCustomer(records);
+      }
+      
+      setCallRecords(records);
+      debugLog('useCallRecords', 'Successfully fetched from Supabase', {
+        count: records?.length || 0,
+        latest_only: filters.latest_only
+      });
     } catch (error) {
       console.warn('Supabase failed, using mock data:', error);
       debugLog('useCallRecords', 'Supabase failed, using mock data', error, true);
@@ -257,8 +289,19 @@ export const useCallRecords = () => {
       try {
         const { data: mockData, error: mockError } = await mockApi.getCallLogs(filters);
         if (mockError) throw mockError;
-        setCallRecords(mockData);
-        debugLog('useCallRecords', 'Successfully fetched from mock data', { count: mockData?.length || 0 });
+        
+        let records = mockData || [];
+        
+        // If latest_only filter is set, deduplicate by customer
+        if (filters.latest_only) {
+          records = getLatestRecordsByCustomer(records);
+        }
+        
+        setCallRecords(records);
+        debugLog('useCallRecords', 'Successfully fetched from mock data', {
+          count: records?.length || 0,
+          latest_only: filters.latest_only
+        });
       } catch (mockError) {
         console.error('Mock data also failed:', mockError);
         debugLog('useCallRecords', 'Mock data failed', mockError, true);
