@@ -80,25 +80,25 @@ docker run -p 3000:80 --env-file .env customer-call-tracker
 docker-compose up -d
 ```
 
-## ☁️ Coolify Deployment
+## ☁️ Coolify Deployment (Nixpacks)
 
-This application is fully configured for Coolify deployment:
+This application is fully configured for Coolify deployment with Nixpacks:
 
 1. **Push to GitHub**
    ```bash
    git add .
-   git commit -m "Ready for Coolify deployment"
+   git commit -m "Ready for Nixpacks deployment"
    git push origin main
    ```
 
 2. **Follow Deployment Guide**
-   See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed Coolify setup instructions
+   See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed Nixpacks & Coolify setup instructions
 
 3. **Quick Deployment Script**
    ```bash
    ./deploy.sh
    ```
-   This script helps validate your environment and prepare for deployment
+   This script helps validate your environment and prepare for Nixpacks deployment
 
 ## 📁 Project Structure
 
@@ -124,9 +124,7 @@ customer-call-tracker/
 ├── database/              # Database schema and migrations
 │   ├── schema.sql         # Main database schema
 │   └── final_schema.sql   # Updated schema
-├── Dockerfile             # Docker container configuration
-├── nginx.conf             # Production web server config
-├── docker-compose.yml     # Docker Compose setup
+├── nixpacks.toml          # Nixpacks configuration
 ├── deploy.sh             # Deployment helper script
 └── DEPLOYMENT.md         # Detailed deployment guide
 ```

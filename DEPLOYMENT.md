@@ -1,3 +1,21 @@
+# Customer Call Tracker - Nixpacks & Coolify Deployment Guide
+
+This guide will help you deploy the Customer Call Tracker application to Coolify using GitHub as your repository source with Nixpacks for automatic containerization.
+
+## What is Nixpacks?
+
+Nixpacks is a build tool that automatically creates container images from your source code. It can detect your application type (React, Node.js, etc.) and build optimized containers without requiring Dockerfiles.
+
+## Advantages of Nixpacks
+
+- **No Docker files needed**: Automatically detects your application
+- **Optimized builds**: Creates production-ready containers automatically
+- **Simpler deployment**: Less configuration required
+- **Auto-updates**: Benefits from Nixpacks improvements without code changes
+- **Platform agnostic**: Works with any Nixpacks-compatible platform
+
+---
+
 # Customer Call Tracker - Coolify Deployment Guide
 
 This guide will help you deploy the Customer Call Tracker application to Coolify using GitHub as your repository source.
@@ -47,9 +65,10 @@ git push -u origin main
 ### 2.2 Configure Repository Settings
 1. **Repository**: Select your GitHub repository
 2. **Branch**: Set to `main` (or your preferred branch)
-3. **Project Type**: Select "Static Site" or "React App"
-4. **Build Command**: `npm run build:prod`
-5. **Output Directory**: `build`
+3. **Build Pack**: Select "Nixpacks" (if available) or "Auto-detect"
+4. **Project Type**: Select "Static Site" or "React App"
+5. **Build Command**: `npm run build:prod`
+6. **Output Directory**: `build`
 
 ### 2.3 Environment Variables in Coolify
 In the Coolify project settings, add these environment variables:
@@ -66,22 +85,30 @@ REACT_APP_ENV=production
 REACT_APP_NAME=Customer Call Tracker
 ```
 
-### 2.4 Port Configuration
-- Coolify will automatically detect the port from the Dockerfile
-- The application will be served on port 80 inside the container
-- Coolify will map this to an external port automatically
+### 2.4 Nixpacks Configuration
+The application includes `nixpacks.toml` which configures:
+- Node.js 18 provider
+- Build command: `npm run build`
+- Start command: `npx serve -s build -l $PORT`
+- Production optimizations
+
+### 2.5 Port Configuration
+- Nixpacks will automatically detect the PORT environment variable
+- The application will serve on the port specified by Coolify
+- No manual port mapping required
 
 ## Step 3: Build and Deploy
 
 ### 3.1 Trigger Build
 1. Click "Deploy" in Coolify
 2. Monitor the build logs for any errors
-3. The build process will:
+3. The Nixpacks build process will:
    - Pull your code from GitHub
-   - Install dependencies
-   - Build the React application
-   - Create a Docker image
-   - Deploy the container
+   - Auto-detect Node.js/React application
+   - Install dependencies using `npm ci`
+   - Build the React application with `npm run build`
+   - Create optimized container automatically
+   - Deploy the application
 
 ### 3.2 Access Your Application
 - Once deployment is complete, Coolify will provide a URL
@@ -95,15 +122,8 @@ REACT_APP_NAME=Customer Call Tracker
 3. Configure DNS records to point to your Coolify instance
 4. SSL certificate will be automatically provisioned
 
-### 4.2 Update nginx.conf (if needed)
-If you need custom domain routing, update the `nginx.conf` file:
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com www.your-domain.com;
-    # ... rest of configuration
-}
+### 4.2 Custom Domain Configuration
+Nixpacks will automatically handle domain routing. If you need custom configuration, Coolify provides built-in domain management features.
 ```
 
 ## Step 5: Database Configuration
@@ -123,33 +143,34 @@ Upload and run the SQL files in your Supabase SQL editor:
 ## Step 6: Monitoring and Maintenance
 
 ### 6.1 Health Checks
-The application includes a health check endpoint at `/health` that Coolify can monitor.
+Nixpacks automatically handles health checks. Coolify will monitor the application status.
 
 ### 6.2 Logs
 - View application logs in Coolify dashboard
-- Nginx logs are included for debugging
+- Nixpacks provides detailed build and runtime logs
 - Application-specific logs can be viewed in browser console
 
 ### 6.3 Updates
 - Updates are automatic when you push to your GitHub repository
-- Coolify will detect changes and redeploy
+- Nixpacks will detect changes and rebuild automatically
 - Use version tags in Git for controlled deployments
 
 ## Troubleshooting
 
 ### Build Issues
-1. **Node Version**: Ensure your local development uses Node.js 18+ to match the Dockerfile
+1. **Node Version**: Nixpacks uses Node.js 18 automatically
 2. **Dependencies**: Check that all dependencies are properly listed in `package.json`
-3. **Environment Variables**: Verify all required environment variables are set
+3. **Environment Variables**: Verify all required environment variables are set in Coolify
+4. **Nixpacks Config**: Ensure `nixpacks.toml` is properly configured
 
 ### Runtime Issues
 1. **Supabase Connection**: Check browser console for API errors
-2. **Routing**: Ensure nginx configuration supports React Router
-3. **Assets**: Verify all static assets are properly built and served
+2. **Routing**: Nixpacks automatically handles React Router
+3. **Assets**: Verify all static assets are properly built and served by the `serve` package
 
 ### Performance
-1. **Caching**: Static assets are cached for 1 year by default
-2. **Gzip**: Enabled for text assets to reduce bandwidth
+1. **Caching**: Static assets are cached by the `serve` package
+2. **Optimization**: Nixpacks creates optimized production builds
 3. **CDN**: Consider using Coolify's built-in CDN features
 
 ## Docker Deployment (Alternative)
@@ -170,14 +191,15 @@ docker run -p 3000:80 \
 ## Security Considerations
 
 1. **Environment Variables**: Never commit actual API keys to Git
-2. **HTTPS**: Use SSL certificates in production
-3. **Headers**: Security headers are included in nginx configuration
-4. **CORS**: Configure Supabase CORS settings for your domain
+2. **HTTPS**: Use SSL certificates in production (automatic with Coolify)
+3. **CORS**: Configure Supabase CORS settings for your domain
+4. **Nixpacks**: Benefits from Nixpacks security best practices automatically
 
 ## Support
 
 - Check Coolify documentation for platform-specific issues
 - Review application logs in Coolify dashboard
-- Test locally with `docker-compose up` before deploying
+- Test locally with `npm run build && npm run serve` before deploying
+- Monitor Nixpacks build logs for detailed information
 
-Your Customer Call Tracker application should now be successfully deployed and accessible via Coolify!
+Your Customer Call Tracker application is now ready for Nixpacks deployment on Coolify! 🚀
