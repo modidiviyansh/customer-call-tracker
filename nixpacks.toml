@@ -1,8 +1,0 @@
-[node]
-version = "18"
-
-[static]
-publish = "build"
-
-[start]
-cmd = "npx serve -s build -p $PORT"
