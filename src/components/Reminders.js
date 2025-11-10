@@ -34,6 +34,9 @@ const Reminders = ({ agentPin }) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      const nextWeek = new Date(today);
+      nextWeek.setDate(today.getDate() + 7);
+
       // Fetch all reminders for the agent with updated_at for latest selection
       const { data, error } = await supabase
         .from('fcm_call_logs')
