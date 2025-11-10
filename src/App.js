@@ -74,22 +74,55 @@ function App() {
   }, [isAuthenticated]);
 
   console.log('App render - isAuthenticated:', isAuthenticated, 'currentAgentPin:', currentAgentPin);
+  console.log('Environment check:', {
+    supabaseUrl: process.env.REACT_APP_SUPABASE_URL ? 'Set' : 'Missing',
+    supabaseKey: process.env.REACT_APP_SUPABASE_ANON_KEY ? 'Set' : 'Missing',
+    isConfigured: isSupabaseConfigured()
+  });
 
   // Check if Supabase is configured
   if (!isSupabaseConfigured()) {
+    console.error('❌ Supabase configuration check failed');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-teal-50">
-        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h1>
-          <p className="text-gray-700 mb-4">
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #e0f2fe 0%, #f8fafc 50%, #ffffff 100%)',
+        padding: '20px',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div style={{
+          maxWidth: '600px',
+          padding: '24px',
+          background: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px' }}>
+            ⚠️ Configuration Error
+          </h1>
+          <p style={{ color: '#374151', marginBottom: '16px', lineHeight: '1.6' }}>
             Supabase environment variables are not configured. Please set the following GitHub Secrets:
           </p>
-          <ul className="list-disc list-inside text-gray-600 mb-4 space-y-2">
-            <li><code className="bg-gray-100 px-2 py-1 rounded">REACT_APP_SUPABASE_URL</code></li>
-            <li><code className="bg-gray-100 px-2 py-1 rounded">REACT_APP_SUPABASE_ANON_KEY</code></li>
+          <ul style={{ listStyle: 'disc', paddingLeft: '24px', color: '#4b5563', marginBottom: '16px' }}>
+            <li style={{ marginBottom: '8px' }}>
+              <code style={{ background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                REACT_APP_SUPABASE_URL
+              </code>
+            </li>
+            <li style={{ marginBottom: '8px' }}>
+              <code style={{ background: '#f3f4f6', padding: '4px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                REACT_APP_SUPABASE_ANON_KEY
+              </code>
+            </li>
           </ul>
-          <p className="text-sm text-gray-500">
-            Go to: Repository Settings → Secrets and variables → Actions
+          <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '16px' }}>
+            Go to: <strong>Repository Settings → Secrets and variables → Actions</strong>
+          </p>
+          <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+            Check the browser console (F12) for more debugging information.
           </p>
         </div>
       </div>
