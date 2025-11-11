@@ -9,7 +9,7 @@ const CSVImport = ({ isOpen, onClose, importType, onImportSuccess }) => {
   const [processedData, setProcessedData] = useState(null);
   const [errors, setErrors] = useState([]);
   const fileInputRef = useRef(null);
-  const { success, error: showError } = useToast();
+  const { success } = useToast();
 
   const getTemplateData = () => {
     if (importType === 'customers') {
