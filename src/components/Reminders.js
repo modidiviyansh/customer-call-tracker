@@ -7,7 +7,7 @@ import CSVImport from './CSVImport';
 import { useToast } from './Toast';
 
 const Reminders = ({ agentPin }) => {
-  const { success } = useToast();
+  const { success, error } = useToast();
   const [reminders, setReminders] = useState({
     overdue: [],
     today: [],
@@ -127,12 +127,103 @@ const Reminders = ({ agentPin }) => {
     fetchTimelineData(customer.id);
   };
 
-  const handleCSVImportSuccess = (importType, importData) => {
+  const handleCSVImportSuccess = async (importType, importData) => {
     if (importType === 'reminders') {
-      // For reminders, we would need to implement reminder creation logic
-      console.log('Reminder import successful:', importData);
-      success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
-      fetchAllReminders(agentPin); // Refresh the reminders list
+      // Import reminders in batches to handle 1000+ entries
+      await importRemindersInBatches(importData, agentPin);
+    }
+  };
+
+  const importRemindersInBatches = async (reminders, agentPin) => {
+    const batchSize = 50; // Process 50 records at a time
+    const totalBatches = Math.ceil(reminders.length / batchSize);
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      // Process reminders in batches
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = reminders.slice(i * batchSize, (i + 1) * batchSize);
+        
+        console.log(`🗂️ Processing batch ${i + 1}/${totalBatches} (${batch.length} reminders)`);
+        
+        // Process current batch
+        const batchResults = await Promise.allSettled(
+          batch.map(async (reminder) => {
+            // Find customer by mobile number
+            const { data: customer, error: customerError } = await supabase
+              .from('fcm_customers')
+              .select('id')
+              .eq('mobile_number', reminder.customer_mobile)
+              .single();
+
+            if (customerError || !customer) {
+              throw new Error(`Customer not found for mobile: ${reminder.customer_mobile}`);
+            }
+
+            // Create call record for reminder
+            const callRecord = {
+              customer_id: customer.id,
+              agent_pin: agentPin,
+              call_date: new Date().toISOString(),
+              next_call_date: new Date(reminder.reminder_date).toISOString(),
+              call_status: 'follow_up',
+              remarks: reminder.reminder_text,
+            };
+
+            const { error: insertError } = await supabase
+              .from('fcm_call_logs')
+              .insert([callRecord]);
+
+            if (insertError) {
+              throw insertError;
+            }
+
+            return { success: true, mobile: reminder.customer_mobile };
+          })
+        );
+
+        // Count batch results
+        batchResults.forEach(result => {
+          if (result.status === 'fulfilled') {
+            results.successful++;
+          } else {
+            results.failed++;
+            results.errors.push(result.reason.message || result.reason);
+            console.error('Failed to import reminder:', result.reason);
+          }
+        });
+
+        // Update user feedback every batch
+        const progress = Math.round(((i + 1) / totalBatches) * 100);
+        console.log(`⏳ Import progress: ${progress}% (${results.successful} successful, ${results.failed} failed)`);
+
+        // Brief pause between batches to prevent overwhelming the database
+        if (i < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      // Final user feedback
+      if (results.successful > 0) {
+        success(`Successfully imported ${results.successful} reminders!`);
+        fetchAllReminders(agentPin); // Refresh the reminders list
+      }
+
+      if (results.failed > 0) {
+        console.error('Import completed with errors:', results.errors);
+        // Show only first few errors to user to avoid spam
+        const errorMessage = results.errors.slice(0, 3).join('; ');
+        const moreErrors = results.errors.length > 3 ? `...and ${results.errors.length - 3} more` : '';
+        error(`Failed to import ${results.failed} reminders. First errors: ${errorMessage} ${moreErrors}`);
+      }
+
+    } catch (error) {
+      console.error('Critical error during reminder import:', error);
+      error(`Import failed: ${error.message}`);
     }
   };
 

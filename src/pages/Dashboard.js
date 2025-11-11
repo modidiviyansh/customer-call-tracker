@@ -118,41 +118,86 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
   const handleCSVImportSuccess = async (importType, importData) => {
     if (importType === 'customers') {
-      // Process customer imports with proper async handling
-      const results = await Promise.allSettled(
-        importData.map(async (customer) => {
-          // Fix field name mismatch: mobile_number -> mobile
-          const customerData = {
-            name: customer.name,
-            mobile: customer.mobile_number, // Convert mobile_number to mobile
-            address_details: customer.address_details || {}
-          };
-          
-          const result = await createCustomer(customerData);
-          if (result.error) {
-            throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
+      // Import customers in batches to handle 1000+ entries
+      await importCustomersInBatches(importData);
+    } else {
+      // Reminders are handled in the Reminders component
+      console.log('Reminder import handled in Reminders component:', importType);
+    }
+  };
+
+  const importCustomersInBatches = async (customers) => {
+    const batchSize = 50; // Process 50 records at a time
+    const totalBatches = Math.ceil(customers.length / batchSize);
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: []
+    };
+
+    try {
+      // Process customers in batches
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = customers.slice(i * batchSize, (i + 1) * batchSize);
+        
+        console.log(`🗂️ Processing customer batch ${i + 1}/${totalBatches} (${batch.length} customers)`);
+        
+        // Process current batch
+        const batchResults = await Promise.allSettled(
+          batch.map(async (customer) => {
+            // Fix field name mismatch: mobile_number -> mobile
+            const customerData = {
+              name: customer.name,
+              mobile: customer.mobile_number, // Convert mobile_number to mobile
+              address_details: customer.address_details || {}
+            };
+            
+            const result = await createCustomer(customerData);
+            if (result.error) {
+              throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
+            }
+            return result.data;
+          })
+        );
+
+        // Count batch results
+        batchResults.forEach(result => {
+          if (result.status === 'fulfilled') {
+            results.successful++;
+          } else {
+            results.failed++;
+            results.errors.push(result.reason.message || result.reason);
+            console.error('Failed to import customer:', result.reason);
           }
-          return result.data;
-        })
-      );
+        });
 
-      // Count successes and failures
-      const successful = results.filter(result => result.status === 'fulfilled').length;
-      const failed = results.filter(result => result.status === 'rejected').length;
+        // Update user feedback every batch
+        const progress = Math.round(((i + 1) / totalBatches) * 100);
+        console.log(`⏳ Import progress: ${progress}% (${results.successful} successful, ${results.failed} failed)`);
 
-      if (successful > 0) {
-        success(`Successfully imported ${successful} customers!`);
+        // Brief pause between batches to prevent overwhelming the database
+        if (i < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      // Final user feedback
+      if (results.successful > 0) {
+        success(`Successfully imported ${results.successful} customers!`);
         fetchCustomers(); // Refresh the customers list
       }
 
-      if (failed > 0) {
-        console.error('Failed imports:', results.filter(r => r.status === 'rejected'));
-        error(`Failed to import ${failed} customers. Check console for details.`);
+      if (results.failed > 0) {
+        console.error('Import completed with errors:', results.errors);
+        // Show only first few errors to user to avoid spam
+        const errorMessage = results.errors.slice(0, 3).join('; ');
+        const moreErrors = results.errors.length > 3 ? `...and ${results.errors.length - 3} more` : '';
+        error(`Failed to import ${results.failed} customers. First errors: ${errorMessage} ${moreErrors}`);
       }
 
-    } else {
-      // For reminders, we would need to implement reminder creation logic
-      success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
+    } catch (error) {
+      console.error('Critical error during customer import:', error);
+      error(`Import failed: ${error.message}`);
     }
   };
 
