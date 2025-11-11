@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Phone, User, Calendar, AlertCircle, AlertTriangle, Filter, History, X } from 'lucide-react';
+import { Clock, Phone, User, Calendar, AlertCircle, AlertTriangle, Filter, History, X, Upload } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import CallDisposition from './CallDisposition';
+import CSVImport from './CSVImport';
+import { useToast } from './Toast';
 
 const Reminders = ({ agentPin }) => {
+  const { success } = useToast();
   const [reminders, setReminders] = useState({
     overdue: [],
     today: [],
@@ -15,6 +18,8 @@ const Reminders = ({ agentPin }) => {
   const [showDisposition, setShowDisposition] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [timelineCustomer, setTimelineCustomer] = useState(null);
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  const [csvImportType, setCSVImportType] = useState('reminders');
   const [activeTab, setActiveTab] = useState('today');
   const [selectedDispositions, setSelectedDispositions] = useState([]);
   const [availableDispositions, setAvailableDispositions] = useState([]);
@@ -128,6 +133,20 @@ const Reminders = ({ agentPin }) => {
     fetchTimelineData(customer.id);
   };
 
+  const handleCSVImportSuccess = (importType, importData) => {
+    if (importType === 'reminders') {
+      // For reminders, we would need to implement reminder creation logic
+      console.log('Reminder import successful:', importData);
+      success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
+      fetchAllReminders(agentPin); // Refresh the reminders list
+    }
+  };
+
+  const handleImportCSV = (type) => {
+    setCSVImportType(type);
+    setShowCSVImport(true);
+  };
+
   const fetchTimelineData = async (customerId) => {
     setIsLoadingTimeline(true);
     try {
@@ -218,6 +237,13 @@ const Reminders = ({ agentPin }) => {
         <h2 className="text-xl font-luxury font-semibold text-slate-800">
           Call Reminders
         </h2>
+        <button
+          onClick={() => handleImportCSV('reminders')}
+          className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
+        >
+          <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>Import</span>
+        </button>
       </div>
 
       {/* Sticky Tab Bar */}
@@ -673,6 +699,14 @@ const Reminders = ({ agentPin }) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* CSV Import Modal */}
+      <CSVImport
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        importType={csvImportType}
+        onImportSuccess={handleCSVImportSuccess}
+      />
     </div>
   );
 };

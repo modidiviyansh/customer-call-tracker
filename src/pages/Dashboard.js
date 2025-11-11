@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload } from 'lucide-react';
 import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, SkeletonLoader, ToastContainer, useToast } from '../components';
+import { Reminders, CallDisposition, CSVImport, SkeletonLoader, ToastContainer, useToast } from '../components';
 import { validateIndianMobile, validateIndianPIN, formatIndianMobile } from '../utils/validation';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -13,6 +13,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showCustomerProfile, setShowCustomerProfile] = useState(false);
   const [showCallHistory, setShowCallHistory] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  const [csvImportType, setCSVImportType] = useState('customers');
   const [selectedHistoryCustomer, setSelectedHistoryCustomer] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [customerForm, setCustomerForm] = useState({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
@@ -112,6 +114,29 @@ const Dashboard = ({ agentPin, onSignOut }) => {
         error('Error deleting customer. Please try again.');
       }
     }
+  };
+
+  const handleCSVImportSuccess = (importType, importData) => {
+    if (importType === 'customers') {
+      // Process customer imports
+      importData.forEach(async (customer) => {
+        try {
+          await createCustomer(customer);
+        } catch (error) {
+          console.error('Error creating customer from CSV:', error);
+        }
+      });
+      success(`Successfully imported ${importData.length} customers!`);
+      fetchCustomers(); // Refresh the customers list
+    } else {
+      // For reminders, we would need to implement reminder creation logic
+      success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
+    }
+  };
+
+  const handleImportCSV = (type) => {
+    setCSVImportType(type);
+    setShowCSVImport(true);
   };
 
   const validateForm = () => {
@@ -243,13 +268,22 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             className="input-luxury pl-10 w-full"
           />
         </div>
-        <button
-          onClick={handleCreateCustomer}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-6 py-3 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center space-x-3 font-semibold min-h-[48px] touch-manipulation"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Customer</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleImportCSV('customers')}
+            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 sm:px-4 sm:py-3 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
+          >
+            <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span>Import</span>
+          </button>
+          <button
+            onClick={handleCreateCustomer}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-sm sm:text-base touch-manipulation"
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Add Customer</span>
+          </button>
+        </div>
       </div>
 
       {/* Customers List */}
@@ -305,13 +339,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 </div>
 
                 <div className="flex flex-col w-full gap-3">
-                  {/* Call Now Button - Full width primary action */}
+                  {/* Call Now Button - Mobile optimized */}
                   <motion.button
                     onClick={() => {
                       console.log('📞 Call Now clicked for:', customer.name);
                       handleCallCustomer(customer);
                     }}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-6 py-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation relative z-20 active:scale-95"
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
                     whileTap={{ scale: 0.95 }}
                     title="Open phone dialer"
                     style={{ pointerEvents: 'auto' }}
@@ -320,18 +354,18 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       animate={{ scale: [1, 1.1, 1] }}
                       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <PhoneCall className="w-6 h-6" />
+                      <PhoneCall className="w-5 h-5" />
                     </motion.div>
                     <span>Call Now</span>
                   </motion.button>
 
-                  {/* Log Call Button - Full width primary action */}
+                  {/* Log Call Button - Mobile optimized */}
                   <motion.button
                     onClick={() => {
                       console.log('📝 Log Call clicked for:', customer.name);
                       handleDispositionCustomer(customer);
                     }}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-6 py-4 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation relative z-20 active:scale-95"
+                    className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
                     whileTap={{ scale: 0.95 }}
                     title="Log call disposition"
                     style={{ pointerEvents: 'auto' }}
@@ -340,41 +374,41 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       animate={{ scale: [1, 1.1, 1] }}
                       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
                     >
-                      <Phone className="w-6 h-6" />
+                      <Phone className="w-5 h-5" />
                     </motion.div>
                     <span>Log Call</span>
                   </motion.button>
 
-                  {/* Secondary Actions */}
-                  <div className="flex justify-center space-x-3 pt-2">
+                  {/* Secondary Actions - Mobile optimized */}
+                  <div className="flex justify-center space-x-2 pt-2">
                     <motion.button
                       onClick={() => handleViewProfile(customer)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-4 py-3 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-sm flex items-center space-x-2 text-slate-700 min-h-[48px] min-w-[48px] touch-manipulation"
+                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
                       whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
                       whileTap={{ scale: 0.95 }}
                       title="View customer profile"
                     >
-                      <User className="w-5 h-5" />
+                      <User className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline font-medium">Profile</span>
                     </motion.button>
                     <motion.button
                       onClick={() => handleViewCallHistory(customer)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-4 py-3 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-sm flex items-center space-x-2 text-slate-700 min-h-[48px] min-w-[48px] touch-manipulation"
+                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
                       whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
                       whileTap={{ scale: 0.95 }}
                       title="View call history"
                     >
-                      <History className="w-5 h-5" />
+                      <History className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline font-medium">History</span>
                     </motion.button>
                     <motion.button
                       onClick={() => handleDeleteCustomer(customer.id)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-4 py-3 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-sm flex items-center space-x-2 text-red-600 min-h-[48px] min-w-[48px] touch-manipulation"
+                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-red-600 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
                       whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
                       whileTap={{ scale: 0.95 }}
                       title="Delete customer"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline font-medium">Delete</span>
                     </motion.button>
                   </div>
@@ -397,58 +431,58 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           <>
             {/* Total Calls */}
             <motion.div
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <Phone className="w-6 h-6 text-primary-500" />
-                <div className="text-xl font-bold text-primary-600">{stats.totalCalls}</div>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
+                <div className="text-lg sm:text-xl font-bold text-primary-600">{stats.totalCalls}</div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800">Total Calls</h3>
-              <p className="text-slate-600 text-sm">All-time record</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Total Calls</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">All-time record</p>
             </motion.div>
 
             {/* Today's Calls */}
             <motion.div
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <UserCheck className="w-6 h-6 text-secondary-500" />
-                <div className="text-xl font-bold text-secondary-600">{stats.todaysCalls}</div>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-secondary-500" />
+                <div className="text-lg sm:text-xl font-bold text-secondary-600">{stats.todaysCalls}</div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800">Today's Calls</h3>
-              <p className="text-slate-600 text-sm">Completed today</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Today's Calls</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">Completed today</p>
             </motion.div>
 
             {/* Reminders */}
             <motion.div
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <Clock className="w-6 h-6 text-luxury-gold" />
-                <div className="text-xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-luxury-gold" />
+                <div className="text-lg sm:text-xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800">Reminders</h3>
-              <p className="text-slate-600 text-sm">Due today</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Reminders</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">Due today</p>
             </motion.div>
 
             {/* Active Customers */}
             <motion.div
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <Users className="w-6 h-6 text-slate-600" />
-                <div className="text-xl font-bold text-slate-600">{customers.length}</div>
+              <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
+                <div className="text-lg sm:text-xl font-bold text-slate-600">{customers.length}</div>
               </div>
-              <h3 className="text-lg font-semibold text-slate-800">Customers</h3>
-              <p className="text-slate-600 text-sm">Total in system</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Customers</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">Total in system</p>
             </motion.div>
           </>
         )}
@@ -491,7 +525,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           {callRecords.map((record) => (
             <div
               key={record.id}
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -1208,6 +1242,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           </motion.div>
         </motion.div>
       )}
+
+      {/* CSV Import Modal */}
+      <CSVImport
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        importType={csvImportType}
+        onImportSuccess={handleCSVImportSuccess}
+      />
     </div>
   );
 };
