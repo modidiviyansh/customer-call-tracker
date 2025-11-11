@@ -23,7 +23,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
   const { customers, searchQuery, setSearchQuery, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
-  const { toasts, success, removeToast } = useToast();
+  const { toasts, success, error, removeToast } = useToast();
 
   console.log('Dashboard render - agentPin:', agentPin, 'isAuthenticated:', isAuthenticated);
 
@@ -116,18 +116,40 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     }
   };
 
-  const handleCSVImportSuccess = (importType, importData) => {
+  const handleCSVImportSuccess = async (importType, importData) => {
     if (importType === 'customers') {
-      // Process customer imports
-      importData.forEach(async (customer) => {
-        try {
-          await createCustomer(customer);
-        } catch (error) {
-          console.error('Error creating customer from CSV:', error);
-        }
-      });
-      success(`Successfully imported ${importData.length} customers!`);
-      fetchCustomers(); // Refresh the customers list
+      // Process customer imports with proper async handling
+      const results = await Promise.allSettled(
+        importData.map(async (customer) => {
+          // Fix field name mismatch: mobile_number -> mobile
+          const customerData = {
+            name: customer.name,
+            mobile: customer.mobile_number, // Convert mobile_number to mobile
+            address_details: customer.address_details || {}
+          };
+          
+          const result = await createCustomer(customerData);
+          if (result.error) {
+            throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
+          }
+          return result.data;
+        })
+      );
+
+      // Count successes and failures
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      const failed = results.filter(result => result.status === 'rejected').length;
+
+      if (successful > 0) {
+        success(`Successfully imported ${successful} customers!`);
+        fetchCustomers(); // Refresh the customers list
+      }
+
+      if (failed > 0) {
+        console.error('Failed imports:', results.filter(r => r.status === 'rejected'));
+        error(`Failed to import ${failed} customers. Check console for details.`);
+      }
+
     } else {
       // For reminders, we would need to implement reminder creation logic
       success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
