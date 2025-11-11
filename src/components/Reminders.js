@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Phone, User, Calendar, AlertCircle, AlertTriangle, Filter, History, X, Upload } from 'lucide-react';
+import { Clock, Phone, User, Calendar, AlertCircle, AlertTriangle, Filter, History, X, Upload, PhoneCall } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import CallDisposition from './CallDisposition';
 import CSVImport from './CSVImport';
@@ -65,39 +65,33 @@ const Reminders = ({ agentPin }) => {
 
       if (error) throw error;
 
-      // Group by customer_id and next_call_date, keep latest per group
-      const groupedReminders = new Map();
+      // Group by customer_id only, keep latest record per customer
+      const latestCustomerReminders = new Map();
       const dispositions = new Set();
 
       (data || []).forEach(reminder => {
-        const reminderDate = new Date(reminder.next_call_date);
-        reminderDate.setHours(0, 0, 0, 0);
-
-        // Create unique key for customer + next_call_date combination
-        const key = `${reminder.customer_id}_${reminder.next_call_date}`;
-        
-        const existing = groupedReminders.get(key);
-        if (!existing || new Date(reminder.updated_at || reminder.call_date) > new Date(existing.updated_at || existing.call_date)) {
-          groupedReminders.set(key, reminder);
-        }
-
         // Track available dispositions
         if (reminder.call_status) {
           dispositions.add(reminder.call_status);
+        }
+
+        const existing = latestCustomerReminders.get(reminder.customer_id);
+        if (!existing || new Date(reminder.updated_at || reminder.call_date) > new Date(existing.updated_at || existing.call_date)) {
+          latestCustomerReminders.set(reminder.customer_id, reminder);
         }
       });
 
       // Set available dispositions
       setAvailableDispositions(Array.from(dispositions));
 
-      // Categorize reminders
+      // Categorize reminders by timeline (using latest record per customer)
       const categorized = {
         overdue: [],
         today: [],
         upcoming: []
       };
 
-      groupedReminders.forEach(reminder => {
+      latestCustomerReminders.forEach(reminder => {
         const reminderDate = new Date(reminder.next_call_date);
         reminderDate.setHours(0, 0, 0, 0);
 
@@ -139,6 +133,15 @@ const Reminders = ({ agentPin }) => {
       console.log('Reminder import successful:', importData);
       success(`Successfully processed ${importData.length} reminders! (Reminder creation logic needs to be implemented)`);
       fetchAllReminders(agentPin); // Refresh the reminders list
+    }
+  };
+
+  const handleCallCustomer = (customer) => {
+    // Open phone dialer
+    const phoneNumber = customer.mobile_number;
+    if (phoneNumber) {
+      // Try to open phone dialer (works on mobile devices and some desktop apps)
+      window.open(`tel:${phoneNumber}`, '_self');
     }
   };
 
@@ -512,27 +515,42 @@ const Reminders = ({ agentPin }) => {
 
                       {/* Right Action Buttons */}
                       <div className="flex flex-col space-y-3 flex-shrink-0">
+                        {/* Call Now Button */}
                         <button
                           onClick={() => {
-                            console.log('🔄 Reminder Call Now clicked for:', reminder.fcm_customers?.name);
+                            console.log('🔄 Call Now clicked for:', reminder.fcm_customers?.name);
+                            handleCallCustomer(reminder.fcm_customers);
+                          }}
+                          className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
+                          style={{ pointerEvents: 'auto' }}
+                        >
+                          <PhoneCall className="w-4 h-4" />
+                          <span>Call Now</span>
+                        </button>
+
+                        {/* Log Call Button */}
+                        <button
+                          onClick={() => {
+                            console.log('📝 Log Call clicked for:', reminder.fcm_customers?.name);
                             setSelectedCustomer(reminder.fcm_customers);
                             setShowDisposition(true);
                           }}
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl px-6 py-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center space-x-3 min-h-[64px] w-32 justify-center touch-manipulation relative z-20 active:scale-95"
+                          className="bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
                           style={{ pointerEvents: 'auto' }}
                         >
-                          <Phone className="w-5 h-5" />
-                          <span>Call</span>
+                          <Phone className="w-4 h-4" />
+                          <span>Log Call</span>
                         </button>
+
                         <button
                           onClick={() => {
                             console.log('📅 Timeline view clicked for:', reminder.fcm_customers?.name);
                             handleViewTimeline(reminder.fcm_customers);
                           }}
-                          className="bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl px-6 py-4 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-base font-semibold flex items-center space-x-3 min-h-[64px] w-32 justify-center touch-manipulation relative z-20 active:scale-95"
+                          className="bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
                           style={{ pointerEvents: 'auto' }}
                         >
-                          <History className="w-5 h-5" />
+                          <History className="w-4 h-4" />
                           <span>History</span>
                         </button>
                       </div>
