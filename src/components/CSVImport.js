@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, Download, FileText, CheckCircle, AlertCircle, Users, Clock } from 'lucide-react';
+import { Upload, X, Download, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from './Toast';
 
 const CSVImport = ({ isOpen, onClose, importType, onImportSuccess }) => {
