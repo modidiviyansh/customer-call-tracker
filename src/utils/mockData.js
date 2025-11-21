@@ -1,159 +1,201 @@
 // Mock data for development when Supabase is not connected
-export const mockCustomers = [
-  {
-    id: '1',
-    name: 'John Smith',
-    mobile_number: '+1-555-0101',
-    address_details: {
-      street: '123 Main St',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001'
-    },
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    mobile_number: '+1-555-0102',
-    address_details: {
-      street: '456 Oak Ave',
-      city: 'Los Angeles',
-      state: 'CA',
-      zipCode: '90210'
-    },
-    created_at: '2024-01-15T11:00:00Z',
-    updated_at: '2024-01-15T11:00:00Z'
-  },
-  {
-    id: '3',
-    name: 'Mike Wilson',
-    mobile_number: '+1-555-0103',
-    address_details: {
-      street: '789 Pine Rd',
-      city: 'Chicago',
-      state: 'IL',
-      zipCode: '60601'
-    },
-    created_at: '2024-01-15T12:00:00Z',
-    updated_at: '2024-01-15T12:00:00Z'
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    mobile_number: '+1-555-0104',
-    address_details: {
-      street: '321 Elm St',
-      city: 'Houston',
-      state: 'TX',
-      zipCode: '77001'
-    },
-    created_at: '2024-01-15T13:00:00Z',
-    updated_at: '2024-01-15T13:00:00Z'
-  },
-  {
-    id: '5',
-    name: 'Robert Brown',
-    mobile_number: '+1-555-0105',
-    address_details: {
-      street: '654 Maple Dr',
-      city: 'Phoenix',
-      state: 'AZ',
-      zipCode: '85001'
-    },
-    created_at: '2024-01-15T14:00:00Z',
-    updated_at: '2024-01-15T14:00:00Z'
-  }
+
+// Data generators for realistic mock data
+const firstNames = [
+  'Amit', 'Priya', 'Rajesh', 'Sunita', 'Vikram', 'Anjali', 'Suresh', 'Meera', 'Arun', 'Kavita',
+  'Rahul', 'Poonam', 'Deepak', 'Rekha', 'Sanjay', 'Neha', 'Manoj', 'Kiran', 'Ravi', 'Shweta',
+  'Vivek', 'Anita', 'Prakash', 'Sarika', 'Ashok', 'Geeta', 'Rakesh', 'Madhuri', 'Vinod', 'Lata',
+  'Sachin', 'Komal', 'Naveen', 'Ritu', 'Ajay', 'Pallavi', 'Rohit', 'Sneha', 'Alok', 'Manju',
+  'Karan', 'Divya', 'Sandeep', 'Archana', 'Gaurav', 'Preeti', 'Harish', 'Kusum', 'Mahesh', 'Seema'
 ];
 
-export const mockCallLogs = [
-  {
-    id: '1',
-    customer_id: '1',
-    agent_pin: '2342',
-    call_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    next_call_date: new Date().toISOString().split('T')[0], // Today
-    call_status: 'follow_up',
-    remarks: 'Customer interested in premium package. Follow up required for demo scheduling.',
-    outcome_score: 8,
-    call_duration_seconds: 300,
-    created_at: '2024-01-15T15:00:00Z',
-    updated_at: '2024-01-15T15:00:00Z',
-    fcm_customer: {
-      id: '1',
-      name: 'John Smith'
-    }
-  },
-  {
-    id: '2',
-    customer_id: '2',
-    agent_pin: '2342',
-    call_date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    next_call_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Tomorrow
-    call_status: 'completed',
-    remarks: 'Successful call. Product demo scheduled for next week. Customer very interested.',
-    outcome_score: 9,
-    call_duration_seconds: 480,
-    created_at: '2024-01-15T16:00:00Z',
-    updated_at: '2024-01-15T16:00:00Z',
-    fcm_customer: {
-      id: '2',
-      name: 'Sarah Johnson'
-    }
-  },
-  {
-    id: '3',
-    customer_id: '3',
-    agent_pin: '2342',
-    call_date: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-    next_call_date: new Date().toISOString().split('T')[0], // Today
-    call_status: 'no_answer',
-    remarks: 'No answer. Customer may be busy. Try again later in the day.',
-    outcome_score: 3,
-    call_duration_seconds: 30,
-    created_at: '2024-01-15T17:00:00Z',
-    updated_at: '2024-01-15T17:00:00Z',
-    fcm_customer: {
-      id: '3',
-      name: 'Mike Wilson'
-    }
-  },
-  {
-    id: '4',
-    customer_id: '4',
-    agent_pin: '2342',
-    call_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    next_call_date: new Date().toISOString().split('T')[0], // Today
-    call_status: 'follow_up',
-    remarks: 'Follow-up call scheduled. Customer requested callback about pricing options.',
-    outcome_score: 7,
-    call_duration_seconds: 420,
-    created_at: '2024-01-15T18:00:00Z',
-    updated_at: '2024-01-15T18:00:00Z',
-    fcm_customer: {
-      id: '4',
-      name: 'Emily Davis'
-    }
-  },
-  {
-    id: '5',
-    customer_id: '5',
-    agent_pin: '2342',
-    call_date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-    next_call_date: null,
-    call_status: 'busy',
-    remarks: 'Customer was busy. Will try again tomorrow.',
-    outcome_score: 4,
-    call_duration_seconds: 60,
-    created_at: '2024-01-15T19:00:00Z',
-    updated_at: '2024-01-15T19:00:00Z',
-    fcm_customer: {
-      id: '5',
-      name: 'Robert Brown'
+const lastNames = [
+  'Sharma', 'Verma', 'Gupta', 'Singh', 'Kumar', 'Patel', 'Jain', 'Agarwal', 'Yadav', 'Chauhan',
+  'Mishra', 'Tiwari', 'Pandey', 'Dubey', 'Trivedi', 'Chaturvedi', 'Saxena', 'Bhatnagar', 'Mathur', 'Garg',
+  'Joshi', 'Shukla', 'Mittal', 'Khanna', 'Kapoor', 'Malhotra', 'Chopra', 'Bansal', 'Goel', 'Arora',
+  'Mehra', 'Sodhi', 'Bedi', 'Kohli', 'Dhawan', 'Gill', 'Kaur', 'Sharma', 'Verma', 'Gupta',
+  'Singh', 'Kumar', 'Patel', 'Jain', 'Agarwal', 'Yadav', 'Chauhan', 'Mishra', 'Tiwari', 'Pandey'
+];
+
+const cities = [
+  'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur', 'Surat', 'Hyderabad',
+  'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal', 'Visakhapatnam', 'Patna', 'Vadodara', 'Ghaziabad',
+  'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan', 'Dombivli', 'Vasai', 'Varanasi',
+  'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Ranchi', 'Howrah', 'Jabalpur', 'Gwalior',
+  'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh', 'Solapur', 'Hubli', 'Bareilly'
+];
+
+const states = [
+  'Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'West Bengal', 'Gujarat', 'Rajasthan', 'Uttar Pradesh', 'Madhya Pradesh', 'Andhra Pradesh',
+  'Punjab', 'Haryana', 'Bihar', 'Jharkhand', 'Odisha', 'Chhattisgarh', 'Uttarakhand', 'Himachal Pradesh', 'Jammu and Kashmir', 'Goa'
+];
+
+const streetNames = [
+  'MG Road', 'Brigade Road', 'Park Street', 'Mount Road', 'Commercial Street', 'Residency Road', 'Jubilee Hills', 'Banjara Hills',
+  'Connaught Place', 'Karol Bagh', 'Lajpat Nagar', 'Nehru Place', 'Rajouri Garden', 'Punjabi Bagh', 'Paschim Vihar',
+  'Ashok Nagar', 'Mayur Vihar', 'Dwarka', 'Rohini', 'Pitampura', 'Shalimar Bagh', 'Civil Lines', 'Gandhi Nagar',
+  'Model Town', 'Lawrence Road', 'Mall Road', 'The Mall', 'Charminar Road', 'Abids Road', 'Nampally Road'
+];
+
+const remarks = [
+  'Customer interested in premium package. Follow up required for demo scheduling.',
+  'Successful call. Product demo scheduled for next week. Customer very interested.',
+  'No answer. Customer may be busy. Try again later in the day.',
+  'Follow-up call scheduled. Customer requested callback about pricing options.',
+  'Customer was busy. Will try again tomorrow.',
+  'Interested in our services. Requested detailed brochure and pricing information.',
+  'Call completed successfully. Customer agreed to proceed with the application.',
+  'Customer not interested at this time. Added to cold list.',
+  'Left voicemail. Waiting for callback regarding loan application.',
+  'Customer has questions about interest rates. Need to provide detailed explanation.',
+  'Successfully converted lead. Customer ready to sign agreement.',
+  'Customer requested more time to decide. Follow up in 3 days.',
+  'Wrong number. Customer disconnected.',
+  'Customer already has similar service. Not interested.',
+  'Call dropped due to poor network. Need to retry.',
+  'Customer interested but budget constraints. Offered flexible payment plan.',
+  'Successfully explained product benefits. Customer scheduled for next visit.',
+  'Customer has existing commitments. Will consider our offer later.',
+  'Call completed. Customer needs to discuss with family before deciding.',
+  'Successfully addressed all concerns. Customer ready to proceed.'
+];
+
+// Generate random date within last 30 days
+const getRandomDate = (daysBack = 30) => {
+  const now = new Date();
+  const pastDate = new Date(now.getTime() - (Math.random() * daysBack * 24 * 60 * 60 * 1000));
+  return pastDate.toISOString();
+};
+
+// Generate random future date within next 7 days
+const getRandomFutureDate = (maxDays = 7) => {
+  const now = new Date();
+  const futureDate = new Date(now.getTime() + (Math.random() * maxDays * 24 * 60 * 60 * 1000));
+  return futureDate.toISOString().split('T')[0];
+};
+
+// Generate random mobile number
+const getRandomMobile = (base = 9876543210) => {
+  const randomNum = Math.floor(Math.random() * 100000000) + base;
+  return `+91${randomNum.toString().slice(-10)}`;
+};
+
+// Generate random PIN code
+const getRandomPin = () => {
+  return Math.floor(Math.random() * 900000) + 100000;
+};
+
+// Generate comprehensive mock customers
+export const mockCustomers = Array.from({ length: 150 }, (_, index) => {
+  const id = (index + 1).toString();
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+  const name = `${firstName} ${lastName}`;
+  const city = cities[Math.floor(Math.random() * cities.length)];
+  const state = states[Math.floor(Math.random() * states.length)];
+  const street = `${Math.floor(Math.random() * 500) + 1} ${streetNames[Math.floor(Math.random() * streetNames.length)]}`;
+
+  // Generate 1-3 mobile numbers randomly
+  const mobileCount = Math.floor(Math.random() * 3) + 1;
+  const mobiles = [];
+  for (let i = 0; i < mobileCount; i++) {
+    mobiles.push(getRandomMobile(9876543210 + index * 10 + i));
+  }
+
+  return {
+    id,
+    name,
+    mobile1: mobiles[0],
+    mobile2: mobiles[1] || null,
+    mobile3: mobiles[2] || null,
+    address_details: {
+      street,
+      city,
+      state,
+      zipCode: getRandomPin().toString()
+    },
+    created_at: getRandomDate(60),
+    updated_at: getRandomDate(30)
+  };
+});
+
+// Call status options with realistic distribution
+const callStatuses = [
+  { status: 'completed', weight: 35, avgDuration: 480, avgScore: 8 },
+  { status: 'follow_up', weight: 25, avgDuration: 360, avgScore: 7 },
+  { status: 'no_answer', weight: 20, avgDuration: 30, avgScore: 2 },
+  { status: 'busy', weight: 10, avgDuration: 45, avgScore: 3 },
+  { status: 'invalid', weight: 5, avgDuration: 15, avgScore: 1 },
+  { status: 'not_interested', weight: 5, avgDuration: 120, avgScore: 2 }
+];
+
+// Generate comprehensive mock call logs
+export const mockCallLogs = Array.from({ length: 300 }, (_, index) => {
+  const id = (index + 1).toString();
+
+  // Randomly select customer
+  const customer = mockCustomers[Math.floor(Math.random() * mockCustomers.length)];
+  const customerId = customer.id;
+
+  // Random call status based on weights
+  const randomWeight = Math.random() * 100;
+  let cumulativeWeight = 0;
+  let selectedStatus = callStatuses[0];
+  for (const status of callStatuses) {
+    cumulativeWeight += status.weight;
+    if (randomWeight <= cumulativeWeight) {
+      selectedStatus = status;
+      break;
     }
   }
-];
+
+  // Generate realistic call date (last 30 days)
+  const callDate = getRandomDate(30);
+
+  // Generate next call date based on status
+  let nextCallDate = null;
+  if (selectedStatus.status === 'follow_up' || selectedStatus.status === 'no_answer' || selectedStatus.status === 'busy') {
+    nextCallDate = getRandomFutureDate(7);
+  } else if (Math.random() < 0.3) { // 30% chance of future reminder even for completed calls
+    nextCallDate = getRandomFutureDate(14);
+  }
+
+  // Generate duration and score based on status
+  const durationVariation = (Math.random() - 0.5) * 0.4; // ±20% variation
+  const scoreVariation = Math.floor((Math.random() - 0.5) * 4); // ±2 variation
+
+  const callDuration = Math.max(15, Math.floor(selectedStatus.avgDuration * (1 + durationVariation)));
+  const outcomeScore = Math.max(1, Math.min(10, selectedStatus.avgScore + scoreVariation));
+
+  // Select random remark
+  const remark = remarks[Math.floor(Math.random() * remarks.length)];
+
+  // Select which mobile number was called (if customer has multiple)
+  const availableMobiles = [customer.mobile1, customer.mobile2, customer.mobile3].filter(m => m);
+  const calledMobile = availableMobiles[Math.floor(Math.random() * availableMobiles.length)];
+
+  return {
+    id,
+    customer_id: customerId,
+    agent_pin: '2342', // Default agent PIN
+    call_date: callDate,
+    next_call_date: nextCallDate,
+    call_status: selectedStatus.status,
+    remarks: remark,
+    outcome_score: outcomeScore,
+    call_duration_seconds: callDuration,
+    called_mobile_number: calledMobile,
+    created_at: callDate,
+    updated_at: callDate,
+    fcm_customers: {
+      id: customer.id,
+      name: customer.name,
+      mobile1: customer.mobile1,
+      mobile2: customer.mobile2,
+      mobile3: customer.mobile3
+    }
+  };
+});
 
 // Debug logging utility
 export const debugLog = (component, action, data = null, isError = false) => {
@@ -184,26 +226,37 @@ export const mockApi = {
   async getCallLogs(filters = {}) {
     debugLog('MockAPI', 'Getting call logs', filters);
     await simulateNetworkDelay();
-    
+
     let filteredLogs = [...mockCallLogs];
-    
+
     if (filters.agent_pin) {
       filteredLogs = filteredLogs.filter(log => log.agent_pin === filters.agent_pin);
     }
-    
+
     if (filters.today) {
       const today = new Date().toISOString().split('T')[0];
-      filteredLogs = filteredLogs.filter(log => 
+      filteredLogs = filteredLogs.filter(log =>
         log.call_date.startsWith(today) || log.next_call_date === today
       );
     }
-    
+
     if (filters.next_reminder_date) {
-      filteredLogs = filteredLogs.filter(log => 
+      filteredLogs = filteredLogs.filter(log =>
         log.next_call_date === filters.next_reminder_date
       );
     }
-    
+
+    if (filters.customer_id) {
+      filteredLogs = filteredLogs.filter(log => log.customer_id === filters.customer_id);
+    }
+
+    if (filters.call_status) {
+      filteredLogs = filteredLogs.filter(log => log.call_status === filters.call_status);
+    }
+
+    // Sort by call_date descending (most recent first)
+    filteredLogs.sort((a, b) => new Date(b.call_date).getTime() - new Date(a.call_date).getTime());
+
     return { data: filteredLogs, error: null };
   },
 

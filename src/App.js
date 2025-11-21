@@ -1,6 +1,6 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Dashboard } from './pages';
+import Dashboard from './pages/Dashboard';
 import { ErrorBoundary, PINEntry } from './components';
 import { usePinAuth } from './hooks/usePinAuth';
 import { isSupabaseConfigured } from './services/supabase';
