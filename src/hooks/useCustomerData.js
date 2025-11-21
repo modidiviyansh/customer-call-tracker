@@ -53,37 +53,18 @@ export const useCustomers = () => {
       
       console.log('📊 Supabase customers data:', data?.length || 0, 'records');
       
-      // If no customers found in Supabase, force mock data
-      if (!data || data.length === 0) {
-        console.log('🚨 No customers in Supabase, forcing mock data');
-        const { data: mockData, error: mockError } = await mockApi.getCustomers();
-        if (mockError) throw mockError;
-        
-        // Filter mock data if search query provided
-        let filteredData = mockData;
-        if (query.trim()) {
-          const lowerQuery = query.toLowerCase();
-          filteredData = mockData.filter(customer =>
-            customer.name.toLowerCase().includes(lowerQuery) ||
-            (customer.mobile1 && customer.mobile1.toLowerCase().includes(lowerQuery)) ||
-            (customer.mobile2 && customer.mobile2.toLowerCase().includes(lowerQuery)) ||
-            (customer.mobile3 && customer.mobile3.toLowerCase().includes(lowerQuery))
-          );
-        }
-        
-        setCustomers(filteredData);
-        debugLog('useCustomers', 'Forced mock data with search filter', { count: filteredData?.length || 0, query });
-        return;
-      }
-      
+      // Set customers data (empty array is valid - means no customers exist yet)
       setCustomers(data || []);
       debugLog('useCustomers', 'Successfully fetched from Supabase', { count: data?.length || 0, query });
     } catch (error) {
+      console.error('❌ Supabase connection failed:', error.message);
+      console.log('🔧 USE_MOCK_DATA setting:', USE_MOCK_DATA);
+      
       if (USE_MOCK_DATA) {
-        console.warn('Supabase failed, using mock data:', error);
+        console.warn('🔄 Supabase failed, falling back to mock data as requested');
         debugLog('useCustomers', 'Supabase failed, using mock data', error, true);
       } else {
-        console.warn('Supabase failed, mock data disabled:', error);
+        console.warn('🛑 Supabase failed, mock data disabled - showing empty state');
         debugLog('useCustomers', 'Supabase failed, mock data disabled', error, true);
         setCustomers([]);
         return;
@@ -371,11 +352,14 @@ export const useCallRecords = () => {
         latest_only: filters.latest_only
       });
     } catch (error) {
+      console.error('❌ Supabase call logs connection failed:', error.message);
+      console.log('🔧 USE_MOCK_DATA setting:', USE_MOCK_DATA);
+      
       if (USE_MOCK_DATA) {
-        console.warn('Supabase failed, using mock data:', error);
+        console.warn('🔄 Supabase failed, falling back to mock data as requested');
         debugLog('useCallRecords', 'Supabase failed, using mock data', error, true);
       } else {
-        console.warn('Supabase failed, mock data disabled:', error);
+        console.warn('🛑 Supabase failed, mock data disabled - showing empty state');
         debugLog('useCallRecords', 'Supabase failed, mock data disabled', error, true);
         setCallRecords([]);
         return;
@@ -494,18 +478,8 @@ export const useDashboardStats = (agentPin) => {
 
       console.log('📊 Supabase call logs data:', data?.length || 0, 'records');
       
-      // If no call records found in Supabase, use mock data for stats
-      let callData = data;
-      if (!data || data.length === 0) {
-        console.log('🚨 No call logs in Supabase, fetching mock data for stats');
-        try {
-          const { data: mockLogs } = await mockApi.getCallLogs({ agent_pin: agentPin });
-          callData = mockLogs;
-          debugLog('useDashboardStats', 'Using mock data for stats', { count: mockLogs?.length || 0 });
-        } catch (mockError) {
-          console.error('Failed to get mock data for stats:', mockError);
-        }
-      }
+      // Use the actual data (empty array is valid - means no call logs exist yet)
+      const callData = data || [];
 
       // Calculate stats
       const totalCalls = callData?.length || 0;
