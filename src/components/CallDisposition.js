@@ -9,7 +9,28 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
   const [nextReminder, setNextReminder] = useState('');
   const [duration, setDuration] = useState('');
   const [outcomeScore, setOutcomeScore] = useState(5);
+  const [calledMobileNumber, setCalledMobileNumber] = useState('');
   const { createCallRecord, loading } = useCallRecords();
+
+  // Get available mobile numbers for the customer
+  const availableMobileNumbers = React.useMemo(() => {
+    const numbers = [];
+    if (customer?.mobile1) numbers.push({ value: customer.mobile1, label: `Primary: ${customer.mobile1}` });
+    if (customer?.mobile2) numbers.push({ value: customer.mobile2, label: `Secondary: ${customer.mobile2}` });
+    if (customer?.mobile3) numbers.push({ value: customer.mobile3, label: `Tertiary: ${customer.mobile3}` });
+    // Fallback for old schema
+    if (customer?.mobile_number && !customer?.mobile1) {
+      numbers.push({ value: customer.mobile_number, label: customer.mobile_number });
+    }
+    return numbers;
+  }, [customer]);
+
+  // Set default mobile number when component mounts
+  React.useEffect(() => {
+    if (availableMobileNumbers.length > 0 && !calledMobileNumber) {
+      setCalledMobileNumber(availableMobileNumbers[0].value);
+    }
+  }, [availableMobileNumbers, calledMobileNumber]);
 
   const dispositionOptions = [
     { value: 'completed', label: 'Completed', icon: CheckCircle, color: 'text-green-600' },
@@ -32,6 +53,7 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
       next_call_date: nextReminder || null,
       call_duration_seconds: duration ? parseInt(duration) * 60 : null, // Convert minutes to seconds
       outcome_score: outcomeScore,
+      called_mobile_number: calledMobileNumber || null, // Track which number was called
     };
 
     // Create remarks history log
@@ -76,8 +98,16 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
               Call Disposition
             </h2>
             <p className="text-slate-600">
-              {customer?.name} • {customer?.mobile_number}
+              {customer?.name} • {customer?.mobile1 || customer?.mobile_number || 'No mobile'}
             </p>
+            {/* Show additional mobile numbers if available */}
+            {(customer?.mobile2 || customer?.mobile3) && (
+              <p className="text-sm text-slate-500 mt-1">
+                {customer?.mobile2 && `Alt: ${customer.mobile2}`}
+                {customer?.mobile2 && customer?.mobile3 && ' • '}
+                {customer?.mobile3 && `${customer.mobile3}`}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -121,6 +151,30 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
               })}
             </div>
           </div>
+
+          {/* Mobile Number Selection - Only show if customer has multiple numbers */}
+          {availableMobileNumbers.length > 1 && (
+            <div>
+              <label className="block text-base font-semibold text-slate-800 mb-3">
+                Mobile Number Called *
+              </label>
+              <select
+                value={calledMobileNumber}
+                onChange={(e) => setCalledMobileNumber(e.target.value)}
+                className="w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg font-medium min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 border-slate-300"
+                required
+              >
+                {availableMobileNumbers.map((mobile) => (
+                  <option key={mobile.value} value={mobile.value}>
+                    {mobile.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-slate-500 mt-2">
+                Select which mobile number you called for this customer
+              </p>
+            </div>
+          )}
 
           {/* Call Details */}
           <div className="space-y-4">

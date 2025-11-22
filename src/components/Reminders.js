@@ -56,7 +56,9 @@ const Reminders = ({ agentPin }) => {
           fcm_customers (
             id,
             name,
-            mobile_number
+            mobile1,
+            mobile2,
+            mobile3
           )
         `)
         .eq('agent_pin', agentPin)
@@ -153,11 +155,11 @@ const Reminders = ({ agentPin }) => {
         // Process current batch
         const batchResults = await Promise.allSettled(
           batch.map(async (reminder) => {
-            // Find customer by mobile number
+            // Find customer by mobile number (check all mobile fields)
             const { data: customer, error: customerError } = await supabase
               .from('fcm_customers')
               .select('id')
-              .eq('mobile_number', reminder.customer_mobile)
+              .or(`mobile1.eq.${reminder.customer_mobile},mobile2.eq.${reminder.customer_mobile},mobile3.eq.${reminder.customer_mobile}`)
               .single();
 
             if (customerError || !customer) {
@@ -228,8 +230,8 @@ const Reminders = ({ agentPin }) => {
   };
 
   const handleCallCustomer = (customer) => {
-    // Open phone dialer
-    const phoneNumber = customer.mobile_number;
+    // Open phone dialer - use primary mobile number
+    const phoneNumber = customer.mobile1 || customer.mobile_number;
     if (phoneNumber) {
       // Try to open phone dialer (works on mobile devices and some desktop apps)
       window.open(`tel:${phoneNumber}`, '_self');
@@ -577,7 +579,10 @@ const Reminders = ({ agentPin }) => {
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2 text-base text-slate-600">
                             <Phone className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                            <span className="truncate">{reminder.fcm_customers?.mobile_number || 'No phone'}</span>
+                            <span className="truncate">{reminder.fcm_customers?.mobile1 || 'No phone'}</span>
+                            {reminder.fcm_customers?.mobile2 && (
+                              <span className="text-sm text-slate-400">• {reminder.fcm_customers.mobile2}</span>
+                            )}
                           </div>
 
                           <div className="flex items-center space-x-2 text-base text-slate-500">
