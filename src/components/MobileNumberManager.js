@@ -18,10 +18,19 @@ const MobileNumberManager = ({
   // Helper function to create composite key (name + mobile combination)
   const createCompositeKey = (name, mobile) => {
     if (!name || !mobile) return null;
-    const namePrefix = name.toLowerCase().replace(/\s+/g, '').slice(0, 5).padEnd(5, 'x');
+    
+    // Clean and normalize the name - keep alphanumeric characters only
+    const cleanName = name.toLowerCase()
+      .replace(/[^\w]/g, '') // Remove special characters
+      .replace(/\s+/g, '');   // Remove all whitespace
+    
+    const namePrefix = cleanName.slice(0, 5).padEnd(5, 'x');
+    
+    // Extract mobile digits
     const mobileDigits = mobile.replace(/\D/g, '');
     if (mobileDigits.length !== 10) return null;
     const mobileSuffix = mobileDigits.slice(-5);
+    
     return `${namePrefix}-${mobileSuffix}`;
   };
 

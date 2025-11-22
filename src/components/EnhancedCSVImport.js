@@ -147,10 +147,19 @@ const EnhancedCSVImport = ({
         // Create composite keys for duplicate checking (name + mobile combination)
         const createCompositeKey = (name, mobile) => {
           if (!name || !mobile) return null;
-          const namePrefix = name.toLowerCase().replace(/\s+/g, '').slice(0, 5).padEnd(5, 'x');
+          
+          // Clean and normalize the name - keep alphanumeric characters only
+          const cleanName = name.toLowerCase()
+            .replace(/[^\w]/g, '') // Remove special characters
+            .replace(/\s+/g, '');   // Remove all whitespace
+          
+          const namePrefix = cleanName.slice(0, 5).padEnd(5, 'x');
+          
+          // Extract mobile digits
           const mobileDigits = mobile.replace(/\D/g, '');
           if (mobileDigits.length !== 10) return null;
           const mobileSuffix = mobileDigits.slice(-5);
+          
           return `${namePrefix}-${mobileSuffix}`;
         };
 
@@ -350,25 +359,31 @@ const EnhancedCSVImport = ({
               ? await onImportSuccess('customers', [item])
               : await onImportSuccess('reminders', [item]);
             
+            // Handle cases where result is undefined or doesn't have expected structure
+            if (!result) {
+              throw new Error('Import function returned no result');
+            }
+            
             if (result.error) {
-              console.error(`❌ Import failed for ${itemIdentifier}:`, result.error.message);
-              throw new Error(result.error.message || 'Import failed');
+              console.error(`❌ Import failed for ${itemIdentifier}:`, result.error.message || result.error);
+              throw new Error(result.error.message || result.error || 'Import failed');
             }
             
             console.log(`✅ Successfully imported contact ${globalIndex + 1}: ${itemIdentifier}`);
             return { 
               success: true, 
-              data: result.data, 
+              data: result.data || result, 
               item, 
               index: globalIndex + 1,
               identifier: itemIdentifier,
               timestamp: new Date().toISOString()
             };
           } catch (err) {
-            console.error(`❌ Failed to import contact ${globalIndex + 1} (${itemIdentifier}):`, err.message);
+            const errorMessage = err.message || err.toString() || 'Unknown error';
+            console.error(`❌ Failed to import contact ${globalIndex + 1} (${itemIdentifier}):`, errorMessage);
             return { 
               success: false, 
-              error: err.message, 
+              error: errorMessage, 
               item, 
               index: globalIndex + 1,
               identifier: itemIdentifier,
@@ -388,6 +403,29 @@ const EnhancedCSVImport = ({
         batchResults.forEach((result, batchIndex) => {
           const globalIndex = batchStartIndex + batchIndex;
           
+          // Ensure result object is valid
+          if (!result) {
+            console.error(`❌ [${globalIndex + 1}/${dataToImport.length}] Invalid result object`);
+            importResults.failed++;
+            batchFailed++;
+            
+            const errorDetail = {
+              success: false,
+              error: 'Invalid result object',
+              item: batch[batchIndex],
+              index: globalIndex + 1,
+              identifier: `${batch[batchIndex]?.name || 'Unknown'} (${batch[batchIndex]?.mobile1 || 'No mobile'})`,
+              timestamp: new Date().toISOString(),
+              batchNumber: i + 1,
+              globalIndex: globalIndex + 1,
+              isRetryable: false
+            };
+            
+            importResults.contactDetails.failed.push(errorDetail);
+            batchErrors.push(errorDetail);
+            return;
+          }
+          
           if (result.success) {
             importResults.successful++;
             batchSuccessful++;
@@ -396,7 +434,7 @@ const EnhancedCSVImport = ({
               batchNumber: i + 1,
               globalIndex: globalIndex + 1
             });
-            console.log(`✅ [${globalIndex + 1}/${dataToImport.length}] ${result.identifier} - SUCCESS`);
+            console.log(`✅ [${globalIndex + 1}/${dataToImport.length}] ${result.identifier || 'Unknown'} - SUCCESS`);
           } else {
             importResults.failed++;
             batchFailed++;
@@ -405,7 +443,7 @@ const EnhancedCSVImport = ({
               ...result,
               batchNumber: i + 1,
               globalIndex: globalIndex + 1,
-              error: result.error,
+              error: result.error || 'Unknown error',
               isRetryable: result.isRetryable || false
             };
             
@@ -416,7 +454,7 @@ const EnhancedCSVImport = ({
             }
             
             batchErrors.push(errorDetail);
-            console.log(`❌ [${globalIndex + 1}/${dataToImport.length}] ${result.identifier} - FAILED: ${result.error}`);
+            console.log(`❌ [${globalIndex + 1}/${dataToImport.length}] ${result.identifier || 'Unknown'} - FAILED: ${result.error || 'Unknown error'}`);
           }
         });
 
