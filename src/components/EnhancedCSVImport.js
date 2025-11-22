@@ -155,15 +155,14 @@ const EnhancedCSVImport = ({
         };
 
         // Check for duplicates using composite key (name + mobile combination)
-        const newCompositeKeys = new Set();
-        const duplicateCompositeKeys = new Set();
+        const newCompositeKeys = [];
         
         // Generate composite keys for all mobile numbers for this customer
         mobileNumbers.forEach(mobile => {
           if (mobile) {
             const compositeKey = createCompositeKey(customer.name, mobile);
             if (compositeKey) {
-              newCompositeKeys.add(compositeKey);
+              newCompositeKeys.push(compositeKey);
             }
           }
         });
