@@ -10,3 +10,5 @@ export {
   getPrimaryMobile,
   categorizeCalls
 } from './useCustomerData';
+
+export { usePaginatedCustomers } from './usePaginatedCustomers';

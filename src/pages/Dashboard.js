@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload } from 'lucide-react';
-import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
+import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, Pagination, MobileNumberManager, CallNowDropdown } from '../components';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobileNumberManager, CallNowDropdown } from '../components';
 import { validateIndianPIN } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -25,14 +25,28 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     address_details: { street: '', city: '', state: '', zipCode: '' }
   });
   const [formErrors, setFormErrors] = useState({});
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
 
   const { isAuthenticated } = usePinAuth();
   const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
-  const { customers, searchQuery, setSearchQuery, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { 
+    customers, 
+    loading: customersLoading, 
+    error: customersError,
+    searchQuery, 
+    handleSearch, 
+    clearSearch,
+    totalCount,
+    totalPages,
+    currentPage,
+    pageSize,
+    goToPage,
+    changePageSize,
+    paginationInfo,
+    refresh,
+    createCustomer, 
+    updateCustomer, 
+    deleteCustomer 
+  } = usePaginatedCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
   const { toasts, success, removeToast } = useToast();
 
@@ -46,7 +60,6 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       localStorage.setItem('agent_pin', agentPin);
 
       // Load all data
-      fetchCustomers();
       // For today's calls, show only the latest record per customer
       fetchCallRecords({ agent_pin: agentPin, today: true, latest_only: true });
       refreshStats();
@@ -90,9 +103,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   };
 
   const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    fetchCustomers(query);
+    handleSearch(e.target.value);
   };
 
   const handleCreateCustomer = () => {
@@ -196,7 +207,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       );
       
       // Refresh customers list after successful import
-      fetchCustomers();
+      refresh();
       
       return { data: results, error: null };
     } catch (error) {
@@ -334,11 +345,6 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   };
 
   const renderCustomers = () => {
-    // Calculate pagination
-    const startIndex = (currentPage - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedCustomers = customers.slice(startIndex, endIndex);
-
     return (
       <div className="space-y-6">
         {/* Search and Add Customer */}
@@ -373,14 +379,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
         {/* Pagination Controls (Top) */}
         {customers.length > 0 && (
-          <Pagination
-            data={customers}
+          <ServerPagination
             currentPage={currentPage}
             pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            onPageSizeChange={changePageSize}
             showSearch={false}
             showInfo={true}
+            loading={customersLoading}
+            serverName="Supabase"
           />
         )}
 
@@ -397,7 +406,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
               </p>
             </div>
           ) : (
-            paginatedCustomers.map((customer, index) => (
+            customers.map((customer, index) => (
               <motion.div
                 key={customer.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -506,14 +515,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
         {/* Pagination Controls (Bottom) */}
         {customers.length > 0 && (
-          <Pagination
-            data={customers}
+          <ServerPagination
             currentPage={currentPage}
             pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
+            totalCount={totalCount}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+            onPageSizeChange={changePageSize}
             showSearch={false}
             showInfo={false}
+            loading={customersLoading}
+            serverName="Supabase"
           />
         )}
       </div>
