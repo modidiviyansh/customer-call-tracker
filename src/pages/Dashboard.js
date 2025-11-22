@@ -148,10 +148,24 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const handleCSVImportSuccess = async (importType, importData) => {
     if (importType === 'customers') {
       // Import customers in batches to handle 1000+ entries
-      await importCustomersInBatches(importData);
+      const result = await importCustomersInBatches(importData);
+      
+      // Return proper result structure for EnhancedCSVImport tracking
+      if (result.error) {
+        return { 
+          data: null, 
+          error: { message: result.error.message || result.error.toString() } 
+        };
+      } else {
+        return { 
+          data: result.data, 
+          error: null 
+        };
+      }
     } else {
       // Reminders are handled in the Reminders component
       console.log('Reminder import handled in Reminders component:', importType);
+      return { data: null, error: null };
     }
   };
 
