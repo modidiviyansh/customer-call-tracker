@@ -24,7 +24,7 @@ export const useCustomers = () => {
     debugLog('useCustomers', 'Fetching customers', { authenticated: isAuthenticated, query });
 
     try {
-      // Try Supabase first
+      // Try Supabase first - fetch exactly 1500 records
       let supabaseQuery = supabase
         .from('fcm_customers')
         .select(`
@@ -37,7 +37,8 @@ export const useCustomers = () => {
           created_at,
           updated_at
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1500); // Fetch exactly 1500 records
 
       // Apply search filter if query provided - search across name and all mobile numbers
       if (query.trim()) {
