@@ -15,6 +15,16 @@ const MobileNumberManager = ({
   const [addingNumber, setAddingNumber] = useState(false);
   const [validationError, setValidationError] = useState('');
 
+  // Helper function to create composite key (name + mobile combination)
+  const createCompositeKey = (name, mobile) => {
+    if (!name || !mobile) return null;
+    const namePrefix = name.toLowerCase().replace(/\s+/g, '').slice(0, 5).padEnd(5, 'x');
+    const mobileDigits = mobile.replace(/\D/g, '');
+    if (mobileDigits.length !== 10) return null;
+    const mobileSuffix = mobileDigits.slice(-5);
+    return `${namePrefix}-${mobileSuffix}`;
+  };
+
   const getMobileNumbers = () => {
     return [
       { value: customer.mobile1, type: 'Primary', index: 1 },
@@ -41,19 +51,25 @@ const MobileNumberManager = ({
       return;
     }
 
-    // Check for duplicates across all customers
-    const duplicates = existingCustomers.filter(existing => {
-      if (existing.id === customer.id) return false;
-      return (
-        (existing.mobile1 && formatIndianMobile(newNumber) === formatIndianMobile(existing.mobile1)) ||
-        (existing.mobile2 && formatIndianMobile(newNumber) === formatIndianMobile(existing.mobile2)) ||
-        (existing.mobile3 && formatIndianMobile(newNumber) === formatIndianMobile(existing.mobile3))
-      );
-    });
+    // Check for duplicates using composite key (name + mobile combination)
+    const newCompositeKey = createCompositeKey(customer.name, newNumber);
+    if (newCompositeKey) {
+      const duplicates = existingCustomers.filter(existing => {
+        if (existing.id === customer.id) return false;
+        
+        const existingCompositeKeys = [
+          createCompositeKey(existing.name, existing.mobile1),
+          createCompositeKey(existing.name, existing.mobile2),
+          createCompositeKey(existing.name, existing.mobile3)
+        ].filter(key => key !== null);
 
-    if (duplicates.length > 0) {
-      setValidationError(`Mobile number is already used by ${duplicates[0].name}`);
-      return;
+        return existingCompositeKeys.includes(newCompositeKey);
+      });
+
+      if (duplicates.length > 0) {
+        setValidationError(`Customer ${customer.name} with this mobile number already exists`);
+        return;
+      }
     }
 
     const slotIndex = getAvailableSlot();
@@ -84,19 +100,25 @@ const MobileNumberManager = ({
       return;
     }
 
-    // Check for duplicates with other customers
-    const duplicates = existingCustomers.filter(existing => {
-      if (existing.id === customer.id) return false;
-      return (
-        (existing.mobile1 && formatIndianMobile(newValue) === formatIndianMobile(existing.mobile1)) ||
-        (existing.mobile2 && formatIndianMobile(newValue) === formatIndianMobile(existing.mobile2)) ||
-        (existing.mobile3 && formatIndianMobile(newValue) === formatIndianMobile(existing.mobile3))
-      );
-    });
+    // Check for duplicates using composite key (name + mobile combination)
+    const newCompositeKey = createCompositeKey(customer.name, newValue);
+    if (newCompositeKey) {
+      const duplicates = existingCustomers.filter(existing => {
+        if (existing.id === customer.id) return false;
+        
+        const existingCompositeKeys = [
+          createCompositeKey(existing.name, existing.mobile1),
+          createCompositeKey(existing.name, existing.mobile2),
+          createCompositeKey(existing.name, existing.mobile3)
+        ].filter(key => key !== null);
 
-    if (duplicates.length > 0) {
-      setValidationError(`Mobile number is already used by ${duplicates[0].name}`);
-      return;
+        return existingCompositeKeys.includes(newCompositeKey);
+      });
+
+      if (duplicates.length > 0) {
+        setValidationError(`Customer ${customer.name} with this mobile number already exists`);
+        return;
+      }
     }
 
     // Check if editing Primary number (cannot be empty)

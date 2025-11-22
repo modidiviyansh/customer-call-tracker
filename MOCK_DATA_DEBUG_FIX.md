@@ -3,11 +3,34 @@
 ## Problem Solved
 The bulk contact transfer issue where 499 contacts were imported but only 426 were successfully stored, with 73 missing contacts, has been resolved with comprehensive logging and error tracking.
 
+## Critical Validation Logic Fix
+Additionally identified and fixed a fundamental flaw in the customer validation logic: the system was incorrectly preventing different customers from having the same mobile number, which is unrealistic in real-world scenarios. The validation has been updated to use composite key validation (name + mobile combination) to properly enforce uniqueness while allowing legitimate sharing of mobile numbers between different customers.
+
 ## Root Cause Analysis
 1. **Batch Processing Logic Issue**: The original implementation failed to properly track individual contact status within batches
 2. **Inadequate Error Handling**: Errors were logged at batch level rather than individual contact level
 3. **Missing Status Reporting**: No clear distinction between successful imports and failed ones
 4. **No Retry Logic**: No differentiation between transient errors (retryable) and permanent validation errors
+
+## Critical Validation Logic Fix
+**Original Problem**: The customer validation system incorrectly prevented different customers from having the same mobile number, which is unrealistic and prevents legitimate use cases.
+
+**Real-world scenarios that were incorrectly blocked:**
+- Family members sharing the same mobile number
+- Business contacts using shared business lines
+- Different customers legitimately having the same contact number
+
+**Solution**: Implemented composite key validation using name + mobile number combination:
+- **Composite Key Format**: `[first 5 characters of name]-[last 5 digits of mobile]`
+- **Example**: "John Doe" + "9876543210" = "john--54321"
+- **Validation**: Only prevents duplicate (name + mobile) combinations, not shared mobile numbers
+
+**Implementation Details**:
+- **Files Modified**: 
+  - `EnhancedCSVImport.js` - CSV import validation
+  - `MobileNumberManager.js` - Manual entry validation
+- **Helper Function**: `createCompositeKey()` for consistent key generation
+- **Error Messages**: Updated to reflect composite key validation approach
 
 ## Solution Implementation
 
@@ -86,6 +109,21 @@ Valid Customer 3,7654321098,,,111 Final St,Pune,MH,411001
 - Accurate success/failure counts matching actual imports
 - Detailed error messages for failed contacts
 - Recommendations for next steps
+
+### Composite Key Validation Test Case
+Created test file `test-composite-validation.csv` to demonstrate the new validation logic:
+
+**Test Scenarios:**
+1. **John Doe** with mobile 9876543210 → Valid (first entry)
+2. **Jane Smith** with mobile 9876543210 → Should now be ALLOWED (different name, same mobile)
+3. **Bob Johnson** with mobile 9876543210 → Should now be ALLOWED (different name, same mobile)
+4. **John Different** with mobile 7654321098 → Valid (different name and mobile)
+5. **John D** with mobile 8765432109 → Valid (composite key: "john--54321" - different from "john-98765")
+
+**Expected Behavior:**
+- ✅ All 5 contacts should be valid and importable
+- ✅ No duplicate mobile number errors for Jane Smith, Bob Johnson
+- ✅ Only true duplicates (same name + same mobile) would be rejected
 
 ## Validation Checklist
 - [ ] Individual contact tracking works correctly

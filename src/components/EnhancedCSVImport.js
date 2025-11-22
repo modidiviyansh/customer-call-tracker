@@ -144,21 +144,49 @@ const EnhancedCSVImport = ({
           customerErrors.push('Duplicate mobile numbers within the same customer');
         }
 
-        // Check for duplicates with existing customers
+        // Create composite keys for duplicate checking (name + mobile combination)
+        const createCompositeKey = (name, mobile) => {
+          if (!name || !mobile) return null;
+          const namePrefix = name.toLowerCase().replace(/\s+/g, '').slice(0, 5).padEnd(5, 'x');
+          const mobileDigits = mobile.replace(/\D/g, '');
+          if (mobileDigits.length !== 10) return null;
+          const mobileSuffix = mobileDigits.slice(-5);
+          return `${namePrefix}-${mobileSuffix}`;
+        };
+
+        // Check for duplicates using composite key (name + mobile combination)
+        const newCompositeKeys = new Set();
+        const duplicateCompositeKeys = new Set();
+        
+        // Generate composite keys for all mobile numbers for this customer
+        mobileNumbers.forEach(mobile => {
+          if (mobile) {
+            const compositeKey = createCompositeKey(customer.name, mobile);
+            if (compositeKey) {
+              newCompositeKeys.add(compositeKey);
+            }
+          }
+        });
+
+        // Check against existing customers' composite keys
         const duplicateCustomers = existingCustomers.filter(existing => {
-          return mobileNumbers.some(newMobile => {
-            if (!newMobile) return false;
-            const formattedNew = formatIndianMobile(newMobile);
-            return (
-              (existing.mobile1 && formatIndianMobile(existing.mobile1) === formattedNew) ||
-              (existing.mobile2 && formatIndianMobile(existing.mobile2) === formattedNew) ||
-              (existing.mobile3 && formatIndianMobile(existing.mobile3) === formattedNew)
-            );
-          });
+          const existingCompositeKeys = [
+            createCompositeKey(existing.name, existing.mobile1),
+            createCompositeKey(existing.name, existing.mobile2),
+            createCompositeKey(existing.name, existing.mobile3)
+          ].filter(key => key !== null);
+
+          return newCompositeKeys.some(newKey => 
+            existingCompositeKeys.includes(newKey)
+          );
         });
 
         if (duplicateCustomers.length > 0) {
-          customerErrors.push(`Mobile numbers already used by: ${duplicateCustomers.map(c => c.name).join(', ')}`);
+          const duplicateDetails = duplicateCustomers.map(existing => 
+            `${existing.name} (${existing.mobile1 || existing.mobile2 || existing.mobile3})`
+          ).join(', ');
+          
+          customerErrors.push(`Customer name + mobile combination already exists: ${duplicateDetails}`);
         }
 
         // Warnings (non-blocking)
