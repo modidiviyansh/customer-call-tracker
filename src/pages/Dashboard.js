@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload } from 'lucide-react';
 import { useCustomers, useCallRecords, useDashboardStats } from '../hooks/useCustomerData';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, CSVImport, SkeletonLoader, ToastContainer, useToast } from '../components';
-import { validateIndianMobile, validateIndianPIN, formatIndianMobile } from '../utils/validation';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, Pagination, MobileNumberManager, CallNowDropdown } from '../components';
+import { validateIndianPIN } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
   const [activeTab, setActiveTab] = useState('customers');
@@ -17,13 +17,24 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const [csvImportType, setCSVImportType] = useState('customers');
   const [selectedHistoryCustomer, setSelectedHistoryCustomer] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [customerForm, setCustomerForm] = useState({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
+  const [customerForm, setCustomerForm] = useState({
+    name: '',
+    mobile1: '',
+    mobile2: '',
+    mobile3: '',
+    address_details: { street: '', city: '', state: '', zipCode: '' }
+  });
   const [formErrors, setFormErrors] = useState({});
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const { isAuthenticated } = usePinAuth();
   const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
   const { customers, searchQuery, setSearchQuery, fetchCustomers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
-  const { toasts, success, error, removeToast } = useToast();
+  const { toasts, success, removeToast } = useToast();
 
   console.log('Dashboard render - agentPin:', agentPin, 'isAuthenticated:', isAuthenticated);
 
@@ -45,13 +56,9 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, agentPin]);
 
-  const handleCallCustomer = (customer) => {
-    // Open phone dialer
-    const phoneNumber = customer.mobile_number;
-    if (phoneNumber) {
-      // Try to open phone dialer (works on mobile devices and some desktop apps)
-      window.open(`tel:${phoneNumber}`, '_self');
-    }
+  const handleCallInitiated = (callDetails) => {
+    console.log('Call initiated:', callDetails);
+    // You could add additional logging here if needed
   };
 
   const handleDispositionCustomer = (customer) => {
@@ -68,6 +75,20 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     fetchCallRecords({ agent_pin: agentPin, today: true, latest_only: true });
   };
 
+  const handleCallCustomer = (customer) => {
+    // Initiate call to customer's primary mobile number
+    if (customer && customer.mobile1) {
+      const callUrl = `tel:${customer.mobile1}`;
+      window.open(callUrl, '_self');
+      handleCallInitiated({
+        customerId: customer.id,
+        customerName: customer.name,
+        mobileNumber: customer.mobile1,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -76,7 +97,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
   const handleCreateCustomer = () => {
     setEditingCustomer(null);
-    setCustomerForm({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
+    setCustomerForm({
+      name: '',
+      mobile1: '',
+      mobile2: '',
+      mobile3: '',
+      address_details: { street: '', city: '', state: '', zipCode: '' }
+    });
     setFormErrors({});
     setShowCustomerForm(true);
   };
@@ -85,7 +112,9 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     setEditingCustomer(customer);
     setCustomerForm({
       name: customer.name || '',
-      mobile: customer.mobile_number || '',
+      mobile1: customer.mobile1 || '',
+      mobile2: customer.mobile2 || '',
+      mobile3: customer.mobile3 || '',
       address_details: customer.address_details || {}
     });
     setShowCustomerProfile(true);
@@ -119,85 +148,60 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const handleCSVImportSuccess = async (importType, importData) => {
     if (importType === 'customers') {
       // Import customers in batches to handle 1000+ entries
-      await importCustomersInBatches(importData);
+      const result = await importCustomersInBatches(importData);
+      
+      // Return proper result structure for EnhancedCSVImport tracking
+      if (result.error) {
+        return { 
+          data: null, 
+          error: { message: result.error.message || result.error.toString() } 
+        };
+      } else {
+        return { 
+          data: result.data, 
+          error: null 
+        };
+      }
     } else {
       // Reminders are handled in the Reminders component
       console.log('Reminder import handled in Reminders component:', importType);
+      return { data: null, error: null };
     }
   };
 
   const importCustomersInBatches = async (customers) => {
-    const batchSize = 50; // Process 50 records at a time
-    const totalBatches = Math.ceil(customers.length / batchSize);
-    const results = {
-      successful: 0,
-      failed: 0,
-      errors: []
-    };
-
+    // EnhancedCSVImport handles batching internally, but we still need to process the actual creation
+    // This function is now called by EnhancedCSVImport for each batch or item
+    
+    // If we receive a single item or small batch from EnhancedCSVImport
+    const batch = Array.isArray(customers) ? customers : [customers];
+    
     try {
-      // Process customers in batches
-      for (let i = 0; i < totalBatches; i++) {
-        const batch = customers.slice(i * batchSize, (i + 1) * batchSize);
-        
-        console.log(`🗂️ Processing customer batch ${i + 1}/${totalBatches} (${batch.length} customers)`);
-        
-        // Process current batch
-        const batchResults = await Promise.allSettled(
-          batch.map(async (customer) => {
-            // Fix field name mismatch: mobile_number -> mobile
-            const customerData = {
-              name: customer.name,
-              mobile: customer.mobile_number, // Convert mobile_number to mobile
-              address_details: customer.address_details || {}
-            };
-            
-            const result = await createCustomer(customerData);
-            if (result.error) {
-              throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
-            }
-            return result.data;
-          })
-        );
-
-        // Count batch results
-        batchResults.forEach(result => {
-          if (result.status === 'fulfilled') {
-            results.successful++;
-          } else {
-            results.failed++;
-            results.errors.push(result.reason.message || result.reason);
-            console.error('Failed to import customer:', result.reason);
+      const results = await Promise.all(
+        batch.map(async (customer) => {
+          const customerData = {
+            name: customer.name,
+            mobile1: customer.mobile1,
+            mobile2: customer.mobile2,
+            mobile3: customer.mobile3,
+            address_details: customer.address_details || {}
+          };
+          
+          const result = await createCustomer(customerData);
+          if (result.error) {
+            throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
           }
-        });
-
-        // Update user feedback every batch
-        const progress = Math.round(((i + 1) / totalBatches) * 100);
-        console.log(`⏳ Import progress: ${progress}% (${results.successful} successful, ${results.failed} failed)`);
-
-        // Brief pause between batches to prevent overwhelming the database
-        if (i < totalBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-
-      // Final user feedback
-      if (results.successful > 0) {
-        success(`Successfully imported ${results.successful} customers!`);
-        fetchCustomers(); // Refresh the customers list
-      }
-
-      if (results.failed > 0) {
-        console.error('Import completed with errors:', results.errors);
-        // Show only first few errors to user to avoid spam
-        const errorMessage = results.errors.slice(0, 3).join('; ');
-        const moreErrors = results.errors.length > 3 ? `...and ${results.errors.length - 3} more` : '';
-        error(`Failed to import ${results.failed} customers. First errors: ${errorMessage} ${moreErrors}`);
-      }
-
+          return result.data;
+        })
+      );
+      
+      // Refresh customers list after successful import
+      fetchCustomers();
+      
+      return { data: results, error: null };
     } catch (error) {
-      console.error('Critical error during customer import:', error);
-      error(`Import failed: ${error.message}`);
+      console.error('Error importing customers:', error);
+      return { data: null, error };
     }
   };
 
@@ -217,10 +221,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     }
 
     // Mobile validation
-    if (!customerForm.mobile.trim()) {
-      errors.mobile = 'Mobile number is required';
-    } else if (!validateIndianMobile(customerForm.mobile)) {
-      errors.mobile = 'Please enter a valid Indian mobile number (10 digits starting with 6-9)';
+    if (!customerForm.mobile1) {
+      errors.mobile = 'Primary mobile number is required';
     }
 
     // PIN validation if provided
@@ -241,7 +243,9 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
     const customerData = {
       name: customerForm.name.trim(),
-      mobile_number: formatIndianMobile(customerForm.mobile.trim()),
+      mobile1: customerForm.mobile1,
+      mobile2: customerForm.mobile2,
+      mobile3: customerForm.mobile3,
       address_details: {
         ...customerForm.address_details,
         zipCode: customerForm.address_details.zipCode || undefined
@@ -256,46 +260,54 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     });
 
     // Create audit log entry for customer changes
-    const auditLog = {
-      customer_id: editingCustomer?.id,
-      action: editingCustomer ? 'UPDATE' : 'CREATE',
-      old_values: editingCustomer ? {
-        name: editingCustomer.name,
-        mobile_number: editingCustomer.mobile_number,
-        address_details: editingCustomer.address_details
-      } : null,
-      new_values: customerData,
-      changed_by: agentPin,
-      change_reason: editingCustomer ? 'Customer profile updated' : 'New customer added'
-    };
-
-    try {
-      let result;
-      if (editingCustomer) {
-        result = await updateCustomer(editingCustomer.id, customerData);
-      } else {
-        result = await createCustomer(customerData);
-      }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      // Log the activity (in a real app, this would be saved to an audit table)
-      console.log('Customer activity logged:', auditLog);
-
-      // Success feedback
-      success(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
-
-      setShowCustomerForm(false);
-      setEditingCustomer(null);
-      setCustomerForm({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
-      setFormErrors({});
-    } catch (error) {
-      console.error('Error saving customer:', error);
-      error('Error saving customer. Please try again.');
-    }
+  const auditLog = {
+    customer_id: editingCustomer?.id,
+    action: editingCustomer ? 'UPDATE' : 'CREATE',
+    old_values: editingCustomer ? {
+      name: editingCustomer.name,
+      mobile1: editingCustomer.mobile1,
+      mobile2: editingCustomer.mobile2,
+      mobile3: editingCustomer.mobile3,
+      address_details: editingCustomer.address_details
+    } : null,
+    new_values: customerData,
+    changed_by: agentPin,
+    change_reason: editingCustomer ? 'Customer profile updated' : 'New customer added'
   };
+
+  try {
+    let result;
+    if (editingCustomer) {
+      result = await updateCustomer(editingCustomer.id, customerData);
+    } else {
+      result = await createCustomer(customerData);
+    }
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    // Log the activity (in a real app, this would be saved to an audit table)
+    console.log('Customer activity logged:', auditLog);
+
+    // Success feedback
+    success(editingCustomer ? 'Customer updated successfully!' : 'Customer added successfully!');
+
+    setShowCustomerForm(false);
+    setEditingCustomer(null);
+    setCustomerForm({
+      name: '',
+      mobile1: '',
+      mobile2: '',
+      mobile3: '',
+      address_details: { street: '', city: '', state: '', zipCode: '' }
+    });
+    setFormErrors({});
+  } catch (error) {
+    console.error('Error saving customer:', error);
+    error('Error saving customer. Please try again.');
+  }
+};
 
   const tabs = [
     { id: 'customers', label: 'Customers', icon: Users },
@@ -321,172 +333,192 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     return colors[status] || 'bg-gradient-to-r from-slate-400 to-slate-500 text-white shadow-lg shadow-slate-500/25';
   };
 
-  const renderCustomers = () => (
-    <div className="space-y-6">
-      {/* Search and Add Customer */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search customers by name or mobile..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="input-luxury pl-10 w-full"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleImportCSV('customers')}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 sm:px-4 sm:py-3 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
-          >
-            <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span>Import</span>
-          </button>
-          <button
-            onClick={handleCreateCustomer}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-sm sm:text-base touch-manipulation"
-          >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Add Customer</span>
-          </button>
-        </div>
-      </div>
+  const renderCustomers = () => {
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedCustomers = customers.slice(startIndex, endIndex);
 
-      {/* Customers List */}
-      <div className="space-y-4">
-        {customers.length === 0 ? (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-600 mb-2">
-              {searchQuery ? 'No customers found' : 'No customers yet'}
-            </h3>
-            <p className="text-slate-500">
-              {searchQuery ? 'Try a different search term' : 'Start by adding your first customer'}
-            </p>
+    return (
+      <div className="space-y-6">
+        {/* Search and Add Customer */}
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search customers by name or mobile..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="input-luxury pl-10 w-full"
+            />
           </div>
-        ) : (
-          customers.map((customer, index) => (
-            <motion.div
-              key={customer.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-              className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleImportCSV('customers')}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 sm:px-4 sm:py-3 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <h3 className="text-lg font-semibold text-slate-800">
-                      {customer.name}
-                    </h3>
-                    <span className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                      {customer.mobile_number}
-                    </span>
-                  </div>
+              <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span>Import</span>
+            </button>
+            <button
+              onClick={handleCreateCustomer}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-sm sm:text-base touch-manipulation"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Add Customer</span>
+            </button>
+          </div>
+        </div>
 
-                  <div className="text-sm text-slate-600 space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span>Added: {new Date(customer.created_at).toLocaleDateString()}</span>
+        {/* Pagination Controls (Top) */}
+        {customers.length > 0 && (
+          <Pagination
+            data={customers}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showSearch={false}
+            showInfo={true}
+          />
+        )}
+
+        {/* Customers List */}
+        <div className="space-y-4">
+          {customers.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-600 mb-2">
+                {searchQuery ? 'No customers found' : 'No customers yet'}
+              </h3>
+              <p className="text-slate-500">
+                {searchQuery ? 'Try a different search term' : 'Start by adding your first customer'}
+              </p>
+            </div>
+          ) : (
+            paginatedCustomers.map((customer, index) => (
+              <motion.div
+                key={customer.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
+                className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        {customer.name}
+                      </h3>
+                      <span className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                        {customer.mobile1}
+                        {customer.mobile2 && <span className="ml-1 text-xs text-slate-400">+{customer.mobile2 ? 1 : 0} more</span>}
+                      </span>
                     </div>
-                    {customer.address_details && (
-                      <>
-                        {customer.address_details.street && (
-                          <div>{customer.address_details.street}</div>
-                        )}
-                        {customer.address_details.city && customer.address_details.state && (
-                          <div>{customer.address_details.city}, {customer.address_details.state}</div>
-                        )}
-                        {customer.address_details.zipCode && (
-                          <div>{customer.address_details.zipCode}</div>
-                        )}
-                      </>
-                    )}
+
+                    <div className="text-sm text-slate-600 space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span>Added: {new Date(customer.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {customer.address_details && (
+                        <>
+                          {customer.address_details.street && (
+                            <div>{customer.address_details.street}</div>
+                          )}
+                          {customer.address_details.city && customer.address_details.state && (
+                            <div>{customer.address_details.city}, {customer.address_details.state}</div>
+                          )}
+                          {customer.address_details.zipCode && (
+                            <div>{customer.address_details.zipCode}</div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col w-full gap-3">
+                    {/* Call Now Dropdown - Mobile optimized */}
+                    <CallNowDropdown
+                      customer={customer}
+                      onCallInitiated={handleCallInitiated}
+                    />
+
+                    {/* Log Call Button - Mobile optimized */}
+                    <motion.button
+                      onClick={() => {
+                        console.log('📝 Log Call clicked for:', customer.name);
+                        handleDispositionCustomer(customer);
+                      }}
+                      className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
+                      whileTap={{ scale: 0.95 }}
+                      title="Log call disposition"
+                      style={{ pointerEvents: 'auto' }}
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                      >
+                        <Phone className="w-5 h-5" />
+                      </motion.div>
+                      <span>Log Call</span>
+                    </motion.button>
+
+                    {/* Secondary Actions - Mobile optimized */}
+                    <div className="flex justify-center space-x-2 pt-2">
+                      <motion.button
+                        onClick={() => handleViewProfile(customer)}
+                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
+                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
+                        whileTap={{ scale: 0.95 }}
+                        title="View customer profile"
+                      >
+                        <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline font-medium">Profile</span>
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleViewCallHistory(customer)}
+                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
+                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
+                        whileTap={{ scale: 0.95 }}
+                        title="View call history"
+                      >
+                        <History className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline font-medium">History</span>
+                      </motion.button>
+                      <motion.button
+                        onClick={() => handleDeleteCustomer(customer.id)}
+                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-red-600 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
+                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Delete customer"
+                      >
+                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline font-medium">Delete</span>
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+            ))
+          )}
+        </div>
 
-                <div className="flex flex-col w-full gap-3">
-                  {/* Call Now Button - Mobile optimized */}
-                  <motion.button
-                    onClick={() => {
-                      console.log('📞 Call Now clicked for:', customer.name);
-                      handleCallCustomer(customer);
-                    }}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
-                    whileTap={{ scale: 0.95 }}
-                    title="Open phone dialer"
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <PhoneCall className="w-5 h-5" />
-                    </motion.div>
-                    <span>Call Now</span>
-                  </motion.button>
-
-                  {/* Log Call Button - Mobile optimized */}
-                  <motion.button
-                    onClick={() => {
-                      console.log('📝 Log Call clicked for:', customer.name);
-                      handleDispositionCustomer(customer);
-                    }}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
-                    whileTap={{ scale: 0.95 }}
-                    title="Log call disposition"
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                    >
-                      <Phone className="w-5 h-5" />
-                    </motion.div>
-                    <span>Log Call</span>
-                  </motion.button>
-
-                  {/* Secondary Actions - Mobile optimized */}
-                  <div className="flex justify-center space-x-2 pt-2">
-                    <motion.button
-                      onClick={() => handleViewProfile(customer)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                      whileTap={{ scale: 0.95 }}
-                      title="View customer profile"
-                    >
-                      <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline font-medium">Profile</span>
-                    </motion.button>
-                    <motion.button
-                      onClick={() => handleViewCallHistory(customer)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                      whileTap={{ scale: 0.95 }}
-                      title="View call history"
-                    >
-                      <History className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline font-medium">History</span>
-                    </motion.button>
-                    <motion.button
-                      onClick={() => handleDeleteCustomer(customer.id)}
-                      className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-red-600 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                      whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                      whileTap={{ scale: 0.95 }}
-                      title="Delete customer"
-                    >
-                      <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline font-medium">Delete</span>
-                    </motion.button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))
+        {/* Pagination Controls (Bottom) */}
+        {customers.length > 0 && (
+          <Pagination
+            data={customers}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            showSearch={false}
+            showInfo={false}
+          />
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderOverview = () => (
     <div className="flex flex-col gap-y-4">
@@ -891,10 +923,27 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
                 <div>
                   <label className="block text-base font-semibold text-slate-800 mb-3">
-                    Mobile Number
+                    Mobile Numbers
                   </label>
-                  <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center">
-                    <p className="text-slate-800 font-medium text-lg">{editingCustomer.mobile_number}</p>
+                  <div className="space-y-2">
+                    {editingCustomer.mobile1 && (
+                      <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center justify-between">
+                        <p className="text-slate-800 font-medium text-lg">{editingCustomer.mobile1}</p>
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Primary</span>
+                      </div>
+                    )}
+                    {editingCustomer.mobile2 && (
+                      <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center justify-between">
+                        <p className="text-slate-800 font-medium text-lg">{editingCustomer.mobile2}</p>
+                        <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded-full">Secondary</span>
+                      </div>
+                    )}
+                    {editingCustomer.mobile3 && (
+                      <div className="p-4 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 min-h-[56px] flex items-center justify-between">
+                        <p className="text-slate-800 font-medium text-lg">{editingCustomer.mobile3}</p>
+                        <span className="text-xs bg-slate-200 text-slate-700 px-2 py-1 rounded-full">Tertiary</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1031,7 +1080,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 onClick={() => {
                   setShowCustomerForm(false);
                   setEditingCustomer(null);
-                  setCustomerForm({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
+                  setCustomerForm({
+                    name: '',
+                    mobile1: '',
+                    mobile2: '',
+                    mobile3: '',
+                    address_details: { street: '', city: '', state: '', zipCode: '' }
+                  });
                   setFormErrors({});
                 }}
                 className="p-2 hover:bg-white/50 rounded-full transition-colors"
@@ -1059,25 +1114,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 )}
               </div>
 
-              {/* Mobile Number */}
+              {/* Mobile Numbers */}
               <div>
-                <label className="block text-base font-semibold text-slate-800 mb-3">
-                  Mobile Number *
-                </label>
-                <input
-                  type="tel"
-                  value={customerForm.mobile}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, mobile: e.target.value }))}
-                  className={`w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg font-medium min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${formErrors.mobile ? 'border-red-500' : 'border-slate-300'}`}
-                  placeholder="Enter 10-digit mobile number (e.g., 9876543210)"
-                  required
+                <MobileNumberManager
+                  customer={customerForm}
+                  onUpdate={(updatedCustomer) => setCustomerForm(updatedCustomer)}
+                  existingCustomers={customers}
+                  disabled={false}
                 />
                 {formErrors.mobile && (
                   <p className="text-red-500 text-sm mt-2 font-medium">{formErrors.mobile}</p>
                 )}
-                <p className="text-slate-600 text-sm mt-2">
-                  Enter number with or without +91 prefix
-                </p>
               </div>
 
               {/* Address Details */}
@@ -1175,7 +1222,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   onClick={() => {
                     setShowCustomerForm(false);
                     setEditingCustomer(null);
-                    setCustomerForm({ name: '', mobile: '', address_details: { street: '', city: '', state: '', zipCode: '' } });
+                    setCustomerForm({
+                      name: '',
+                      mobile1: '',
+                      mobile2: '',
+                      mobile3: '',
+                      address_details: { street: '', city: '', state: '', zipCode: '' }
+                    });
                     setFormErrors({});
                   }}
                   className="w-full sm:w-auto bg-white/90 backdrop-blur-lg text-slate-700 rounded-full px-6 py-4 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation"
@@ -1187,7 +1240,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 </motion.button>
                 <motion.button
                   type="submit"
-                  disabled={!customerForm.name.trim() || !customerForm.mobile.trim()}
+                  disabled={!customerForm.name.trim() || !customerForm.mobile1}
                   className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-6 py-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                   whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.98 }}
@@ -1311,11 +1364,12 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       )}
 
       {/* CSV Import Modal */}
-      <CSVImport
+      <EnhancedCSVImport
         isOpen={showCSVImport}
         onClose={() => setShowCSVImport(false)}
         importType={csvImportType}
         onImportSuccess={handleCSVImportSuccess}
+        existingCustomers={customers}
       />
     </div>
   );

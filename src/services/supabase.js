@@ -59,18 +59,25 @@ export const getCurrentUser = async () => {
   return user
 }
 
-// Check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  const isConfigured = !!(supabaseUrl && supabaseAnonKey && 
-            supabaseUrl !== 'https://placeholder.supabase.co' && 
+  // If mock data is enabled, allow app to run without Supabase
+  const useMockData = process.env.REACT_APP_USE_MOCK_DATA === 'true';
+  if (useMockData) {
+    console.log('✅ Mock data enabled - Supabase configuration not required');
+    return true;
+  }
+
+  const isConfigured = !!(supabaseUrl && supabaseAnonKey &&
+            supabaseUrl !== 'https://placeholder.supabase.co' &&
             supabaseAnonKey !== 'placeholder-key' &&
             supabaseUrl.trim() !== '' &&
-            supabaseAnonKey.trim() !== '')
+            supabaseAnonKey.trim() !== '');
   
   if (!isConfigured) {
     console.warn('⚠️ Supabase is not properly configured. Environment variables:', {
       REACT_APP_SUPABASE_URL: supabaseUrl ? 'Set' : 'Missing',
-      REACT_APP_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Set' : 'Missing'
+      REACT_APP_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Set' : 'Missing',
+      REACT_APP_USE_MOCK_DATA: process.env.REACT_APP_USE_MOCK_DATA
     });
   }
   

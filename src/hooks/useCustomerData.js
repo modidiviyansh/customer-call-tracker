@@ -3,11 +3,19 @@ import { supabase } from '../services/supabase';
 import { mockApi, debugLog } from '../utils/mockData';
 import { usePinAuth } from './usePinAuth';
 
+// Environment variable to control mock data usage
+const USE_MOCK_DATA = process.env.REACT_APP_USE_MOCK_DATA === 'true';
+
+// Debug: Force mock data for testing
+// const USE_MOCK_DATA = true;
+
 export const useCustomers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { isAuthenticated } = usePinAuth();
+  
+  console.log('🔍 useCustomers - USE_MOCK_DATA:', USE_MOCK_DATA, 'env:', process.env.REACT_APP_USE_MOCK_DATA);
 
   const fetchCustomers = async (query = '') => {
     if (!isAuthenticated) return;
@@ -22,39 +30,68 @@ export const useCustomers = () => {
         .select(`
           id,
           name,
-          mobile_number,
+          mobile1,
+          mobile2,
+          mobile3,
           address_details,
           created_at,
           updated_at
         `)
         .order('created_at', { ascending: false });
 
-      // Apply search filter if query provided
+      // Apply search filter if query provided - search across name and all mobile numbers
       if (query.trim()) {
-        supabaseQuery = supabaseQuery.or(`name.ilike.%${query}%,mobile_number.ilike.%${query}%`);
+        const searchTerm = `%${query}%`;
+        supabaseQuery = supabaseQuery.or(
+          `name.ilike.${searchTerm},mobile1.ilike.${searchTerm},mobile2.ilike.${searchTerm},mobile3.ilike.${searchTerm}`
+        );
       }
 
       const { data, error } = await supabaseQuery;
 
       if (error) throw error;
+      
+      console.log('📊 Supabase customers data:', data?.length || 0, 'records');
+      
+      // Set customers data (empty array is valid - means no customers exist yet)
       setCustomers(data || []);
       debugLog('useCustomers', 'Successfully fetched from Supabase', { count: data?.length || 0, query });
     } catch (error) {
-      console.warn('Supabase failed, using mock data:', error);
-      debugLog('useCustomers', 'Supabase failed, using mock data', error, true);
+      console.error('❌ Supabase connection failed:', error.message);
+      console.log('🔧 USE_MOCK_DATA setting:', USE_MOCK_DATA);
+      
+      if (USE_MOCK_DATA) {
+        console.warn('🔄 Supabase failed, falling back to mock data as requested');
+        debugLog('useCustomers', 'Supabase failed, using mock data', error, true);
+      } else {
+        console.warn('🛑 Supabase failed, mock data disabled - showing empty state');
+        debugLog('useCustomers', 'Supabase failed, mock data disabled', error, true);
+        setCustomers([]);
+        return;
+      }
 
       // Fallback to mock data
       try {
         const { data: mockData, error: mockError } = await mockApi.getCustomers();
         if (mockError) throw mockError;
 
-        // Filter mock data if query provided
-        let filteredData = mockData;
+        // Transform mock data to new format if needed (mobile_number -> mobile1)
+        const transformedData = mockData.map(customer => ({
+          ...customer,
+          mobile1: customer.mobile_number || customer.mobile1,
+          mobile2: customer.mobile2 || null,
+          mobile3: customer.mobile3 || null
+        }));
+
+        // Filter mock data if query provided - search across name and all mobile numbers
+        let filteredData = transformedData;
         if (query.trim()) {
           const lowerQuery = query.toLowerCase();
-          filteredData = mockData.filter(customer =>
+          filteredData = transformedData.filter(customer =>
             customer.name.toLowerCase().includes(lowerQuery) ||
-            customer.mobile_number.toLowerCase().includes(lowerQuery)
+            (customer.mobile1 && customer.mobile1.toLowerCase().includes(lowerQuery)) ||
+            (customer.mobile2 && customer.mobile2.toLowerCase().includes(lowerQuery)) ||
+            (customer.mobile3 && customer.mobile3.toLowerCase().includes(lowerQuery))
           );
         }
 
@@ -77,13 +114,17 @@ export const useCustomers = () => {
 
   const createCustomer = async (customerData) => {
     try {
+      const insertData = {
+        name: customerData.name,
+        mobile1: customerData.mobile1,
+        mobile2: customerData.mobile2 || null,
+        mobile3: customerData.mobile3 || null,
+        address_details: customerData.address_details || null,
+      };
+
       const { data, error } = await supabase
         .from('fcm_customers')
-        .insert([{
-          name: customerData.name,
-          mobile_number: customerData.mobile,
-          address_details: customerData.address_details || null,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
@@ -99,12 +140,22 @@ export const useCustomers = () => {
 
   const updateCustomer = async (id, updates) => {
     try {
+      // Handle mobile number updates
+      const { mobile1, mobile2, mobile3, ...otherUpdates } = updates;
+      
+      const updateData = {
+        ...otherUpdates,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include mobile fields if they're provided
+      if (mobile1 !== undefined) updateData.mobile1 = mobile1;
+      if (mobile2 !== undefined) updateData.mobile2 = mobile2 || null;
+      if (mobile3 !== undefined) updateData.mobile3 = mobile3 || null;
+
       const { data, error } = await supabase
         .from('fcm_customers')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -134,16 +185,31 @@ export const useCustomers = () => {
     }
   };
 
+  const searchCustomers = async (query) => {
+    await fetchCustomers(query);
+  };
+
   return {
     customers,
     loading,
     searchQuery,
     setSearchQuery,
     fetchCustomers,
+    searchCustomers,
     createCustomer,
     updateCustomer,
     deleteCustomer,
   };
+};
+
+// Helper function to get all mobile numbers for a customer
+export const getCustomerMobileNumbers = (customer) => {
+  return [customer.mobile1, customer.mobile2, customer.mobile3].filter(mobile => mobile && mobile.trim().length > 0);
+};
+
+// Helper function to get primary mobile number
+export const getPrimaryMobile = (customer) => {
+  return customer.mobile1 || null;
 };
 
 // Helper function to categorize calls
@@ -238,13 +304,16 @@ export const useCallRecords = () => {
           call_status,
           call_duration_seconds,
           outcome_score,
+          called_mobile_number,
           created_at,
           updated_at,
           customer_id,
           fcm_customers (
             id,
             name,
-            mobile_number
+            mobile1,
+            mobile2,
+            mobile3
           )
         `)
         .order('call_date', { ascending: false });
@@ -283,8 +352,18 @@ export const useCallRecords = () => {
         latest_only: filters.latest_only
       });
     } catch (error) {
-      console.warn('Supabase failed, using mock data:', error);
-      debugLog('useCallRecords', 'Supabase failed, using mock data', error, true);
+      console.error('❌ Supabase call logs connection failed:', error.message);
+      console.log('🔧 USE_MOCK_DATA setting:', USE_MOCK_DATA);
+      
+      if (USE_MOCK_DATA) {
+        console.warn('🔄 Supabase failed, falling back to mock data as requested');
+        debugLog('useCallRecords', 'Supabase failed, using mock data', error, true);
+      } else {
+        console.warn('🛑 Supabase failed, mock data disabled - showing empty state');
+        debugLog('useCallRecords', 'Supabase failed, mock data disabled', error, true);
+        setCallRecords([]);
+        return;
+      }
       
       // Fallback to mock data
       try {
@@ -315,18 +394,21 @@ export const useCallRecords = () => {
 
   const createCallRecord = async (callData) => {
     try {
+      const insertData = {
+        customer_id: callData.customer_id,
+        agent_pin: callData.agent_pin,
+        call_date: callData.call_date || new Date().toISOString(),
+        next_call_date: callData.next_call_date || null,
+        remarks: callData.remarks || null,
+        call_status: callData.call_status,
+        call_duration_seconds: callData.call_duration_seconds || null,
+        outcome_score: callData.outcome_score || null,
+        called_mobile_number: callData.called_mobile_number || null,
+      };
+
       const { data, error } = await supabase
         .from('fcm_call_logs')
-        .insert([{
-          customer_id: callData.customer_id,
-          agent_pin: callData.agent_pin,
-          call_date: callData.call_date || new Date().toISOString(),
-          next_call_date: callData.next_call_date || null,
-          remarks: callData.remarks || null,
-          call_status: callData.call_status,
-          call_duration_seconds: callData.call_duration_seconds || null,
-          outcome_score: callData.outcome_score || null,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
@@ -394,17 +476,22 @@ export const useDashboardStats = (agentPin) => {
 
       if (error) throw error;
 
+      console.log('📊 Supabase call logs data:', data?.length || 0, 'records');
+      
+      // Use the actual data (empty array is valid - means no call logs exist yet)
+      const callData = data || [];
+
       // Calculate stats
-      const totalCalls = data?.length || 0;
-      const todaysCalls = data?.filter(record =>
+      const totalCalls = callData?.length || 0;
+      const todaysCalls = callData?.filter(record =>
         record.call_date.startsWith(today)
       ).length || 0;
-      const todaysReminders = data?.filter(record =>
+      const todaysReminders = callData?.filter(record =>
         record.next_call_date === today
       ).length || 0;
 
       // Calculate call status breakdown
-      const callStatusBreakdown = data?.reduce((acc, record) => {
+      const callStatusBreakdown = callData?.reduce((acc, record) => {
         acc[record.call_status] = (acc[record.call_status] || 0) + 1;
         return acc;
       }, {}) || {};
