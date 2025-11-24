@@ -564,7 +564,8 @@ const EnhancedCSVImport = ({
   };
 
   // Display comprehensive import report
-  const showImportReport = (report) => {
+  // eslint-disable-next-line no-unused-vars
+  const _showImportReport = (report) => {
     const reportContent = `
 IMPORT SUMMARY
 ================

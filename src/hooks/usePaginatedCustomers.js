@@ -138,7 +138,54 @@ export const usePaginatedCustomers = () => {
       
       if (USE_MOCK_DATA) {
         console.warn('🔄 Supabase failed, falling back to mock data as requested');
-        await handleMockDataFallback();
+        // Inline mock data fallback logic
+        try {
+          const { data: mockData, error: mockError } = await mockApi.getCustomers();
+          if (mockError) throw mockError;
+
+          // Transform mock data to new format if needed (mobile_number -> mobile1)
+          const transformedData = mockData.map(customer => ({
+            ...customer,
+            mobile1: customer.mobile_number || customer.mobile1,
+            mobile2: customer.mobile2 || null,
+            mobile3: customer.mobile3 || null
+          }));
+
+          // Filter mock data if query provided
+          let filteredData = transformedData;
+          if (debouncedSearchQuery.trim()) {
+            const lowerQuery = debouncedSearchQuery.toLowerCase();
+            filteredData = transformedData.filter(customer =>
+              customer.name.toLowerCase().includes(lowerQuery) ||
+              (customer.mobile1 && customer.mobile1.toLowerCase().includes(lowerQuery)) ||
+              (customer.mobile2 && customer.mobile2.toLowerCase().includes(lowerQuery)) ||
+              (customer.mobile3 && customer.mobile3.toLowerCase().includes(lowerQuery))
+            );
+          }
+
+          // Apply client-side pagination to mock data
+          const from = (currentPage - 1) * pageSize;
+          const to = from + pageSize;
+          const paginatedData = filteredData.slice(from, to);
+
+          setCustomers(paginatedData);
+          setTotalCount(filteredData.length);
+          setTotalPages(Math.ceil(filteredData.length / pageSize));
+
+          debugLog('usePaginatedCustomers', 'Successfully fetched from mock data', {
+            count: paginatedData?.length || 0,
+            totalCount: filteredData.length,
+            currentPage,
+            searchQuery: debouncedSearchQuery
+          });
+        } catch (mockError) {
+          console.error('Mock data also failed:', mockError);
+          setError(mockError.message);
+          setCustomers([]);
+          setTotalCount(0);
+          setTotalPages(0);
+          debugLog('usePaginatedCustomers', 'Mock data fallback failed', mockError, true);
+        }
       } else {
         console.warn('🛑 Supabase failed, mock data disabled - showing error state');
         setError(error.message);
@@ -152,58 +199,7 @@ export const usePaginatedCustomers = () => {
     }
   }, [isAuthenticated, currentPage, pageSize, debouncedSearchQuery]);
 
-  /**
-   * Handle fallback to mock data for development/testing
-   */
-  const handleMockDataFallback = async () => {
-    try {
-      const { data: mockData, error: mockError } = await mockApi.getCustomers();
-      if (mockError) throw mockError;
 
-      // Transform mock data to new format if needed (mobile_number -> mobile1)
-      const transformedData = mockData.map(customer => ({
-        ...customer,
-        mobile1: customer.mobile_number || customer.mobile1,
-        mobile2: customer.mobile2 || null,
-        mobile3: customer.mobile3 || null
-      }));
-
-      // Filter mock data if query provided
-      let filteredData = transformedData;
-      if (debouncedSearchQuery.trim()) {
-        const lowerQuery = debouncedSearchQuery.toLowerCase();
-        filteredData = transformedData.filter(customer =>
-          customer.name.toLowerCase().includes(lowerQuery) ||
-          (customer.mobile1 && customer.mobile1.toLowerCase().includes(lowerQuery)) ||
-          (customer.mobile2 && customer.mobile2.toLowerCase().includes(lowerQuery)) ||
-          (customer.mobile3 && customer.mobile3.toLowerCase().includes(lowerQuery))
-        );
-      }
-
-      // Apply client-side pagination to mock data
-      const from = (currentPage - 1) * pageSize;
-      const to = from + pageSize;
-      const paginatedData = filteredData.slice(from, to);
-
-      setCustomers(paginatedData);
-      setTotalCount(filteredData.length);
-      setTotalPages(Math.ceil(filteredData.length / pageSize));
-
-      debugLog('usePaginatedCustomers', 'Successfully fetched from mock data', {
-        count: paginatedData?.length || 0,
-        totalCount: filteredData.length,
-        currentPage,
-        searchQuery: debouncedSearchQuery
-      });
-    } catch (mockError) {
-      console.error('Mock data also failed:', mockError);
-      setError(mockError.message);
-      setCustomers([]);
-      setTotalCount(0);
-      setTotalPages(0);
-      debugLog('usePaginatedCustomers', 'Mock data failed', mockError, true);
-    }
-  };
 
   // Fetch data when dependencies change
   useEffect(() => {
