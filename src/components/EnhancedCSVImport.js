@@ -632,7 +632,7 @@ ${report.permanentFailures.map(f => `• ${f.identifier}: ${f.error}`).join('\n'
         onClick={handleClose}
       >
         <motion.div
-          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/30"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -777,7 +777,7 @@ ${report.permanentFailures.map(f => `• ${f.identifier}: ${f.error}`).join('\n'
               <button
                 onClick={processFile}
                 disabled={isProcessing}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-blue-800 to-blue-700 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? 'Analyzing File...' : 'Analyze & Validate File'}
               </button>
@@ -815,7 +815,7 @@ ${report.permanentFailures.map(f => `• ${f.identifier}: ${f.error}`).join('\n'
                   </button>
                   <button
                     onClick={handleImport}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                    className="flex-1 bg-gradient-to-r from-green-700 to-green-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center space-x-2"
                   >
                     <CheckCircle className="w-4 h-4" />
                     <span>Import {validationResults.validRows} Valid Items</span>
@@ -908,7 +908,7 @@ ${report.permanentFailures.map(f => `• ${f.identifier}: ${f.error}`).join('\n'
                 onClick={() => setShowReport(false)}
               >
                 <motion.div
-                  className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+                  className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/30"
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}

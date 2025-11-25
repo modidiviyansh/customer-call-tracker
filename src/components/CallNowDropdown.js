@@ -62,7 +62,7 @@ const CallNowDropdown = ({ customer, onCallInitiated, className = '' }) => {
     return (
       <motion.button
         onClick={() => handleCallNumber(mobileOptions[0])}
-        className={`w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95 ${className}`}
+        className={`w-full bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95 ${className}`}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.95 }}
         title={`Call ${mobileOptions[0].display}`}
@@ -83,7 +83,7 @@ const CallNowDropdown = ({ customer, onCallInitiated, className = '' }) => {
     <div className="relative w-full">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95 ${className}`}
+        className={`w-full bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-full px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95 ${className}`}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.95 }}
       >

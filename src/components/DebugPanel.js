@@ -82,7 +82,7 @@ const DebugPanel = ({ isOpen, onClose, lastAction, customerData, reminders, call
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="fixed top-4 left-4 z-[9999] w-80 max-h-96 bg-red-500 text-white rounded-2xl shadow-2xl overflow-hidden"
+      className="fixed top-4 left-4 z-[9999] w-80 max-h-96 bg-red-500 text-white rounded-2xl shadow-xl overflow-hidden border border-white/30"
     >
       {/* Header */}
       <div className="p-3 bg-red-600 flex items-center justify-between">

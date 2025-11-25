@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload, Home, MapPin } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobileNumberManager, CallNowDropdown } from '../components';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobileNumberManager, CallNowDropdown, Button, Accordion, SwipeableCard } from '../components';
 import { validateIndianPIN } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -320,8 +320,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const tabs = [
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'reminders', label: 'Reminders', icon: Clock },
-    { id: 'calls', label: 'Today\'s Calls', icon: Phone },
+    { id: 'reminders', label: 'Call Queue', icon: Clock },
+    { id: 'calls', label: 'My Calls Today', icon: Phone },
     { id: 'logs', label: 'Activity Logs', icon: Calendar },
   ];
 
@@ -331,14 +331,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      completed: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/25',
-      no_answer: 'bg-gradient-to-r from-slate-400 to-slate-500 text-white shadow-lg shadow-slate-500/25',
-      busy: 'bg-gradient-to-r from-orange-400 to-amber-500 text-white shadow-lg shadow-orange-500/25',
-      follow_up: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25',
-      invalid: 'bg-gradient-to-r from-red-400 to-rose-500 text-white shadow-lg shadow-red-500/25',
-      not_interested: 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/25',
+      completed: 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-500/30 border-2 border-emerald-400',
+      no_answer: 'bg-gradient-to-r from-slate-600 to-slate-700 text-white shadow-lg shadow-slate-500/30 border-2 border-slate-400',
+      busy: 'bg-gradient-to-r from-amber-700 to-orange-700 text-white shadow-lg shadow-amber-500/30 border-2 border-amber-400',
+      follow_up: 'bg-gradient-to-r from-blue-800 to-blue-700 text-white shadow-lg shadow-blue-500/30 border-2 border-blue-400',
+      invalid: 'bg-gradient-to-r from-red-700 to-red-600 text-white shadow-lg shadow-red-500/30 border-2 border-red-400',
+      not_interested: 'bg-gradient-to-r from-purple-700 to-pink-700 text-white shadow-lg shadow-purple-500/30 border-2 border-purple-400',
     };
-    return colors[status] || 'bg-gradient-to-r from-slate-400 to-slate-500 text-white shadow-lg shadow-slate-500/25';
+    return colors[status] || 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg shadow-slate-500/30 border-2 border-slate-400';
   };
 
   const renderCustomers = () => {
@@ -357,20 +357,24 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             />
           </div>
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={() => handleImportCSV('customers')}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 sm:px-4 sm:py-3 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
+              variant="success"
+              size="md"
+              className="flex items-center space-x-2"
             >
               <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Import</span>
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCreateCustomer}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full px-4 py-2 sm:px-6 sm:py-3 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-sm sm:text-base touch-manipulation"
+              variant="primary"
+              size="lg"
+              className="flex items-center space-x-2"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Add Customer</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -404,13 +408,34 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             </div>
           ) : (
             customers.map((customer, index) => (
-              <motion.div
+              <SwipeableCard
                 key={customer.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
-                className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+                onSwipeLeft={() => {
+                  console.log('📝 Swipe left - Log Call for:', customer.name);
+                  handleDispositionCustomer(customer);
+                }}
+                onSwipeRight={() => {
+                  console.log('📞 Swipe right - Call Now for:', customer.name);
+                  handleCallCustomer(customer);
+                }}
+                leftAction={{
+                  icon: Phone,
+                  label: 'Log Call',
+                  color: 'from-emerald-500 to-emerald-600'
+                }}
+                rightAction={{
+                  icon: PhoneCall,
+                  label: 'Call Now',
+                  color: 'from-blue-500 to-blue-600'
+                }}
+                className="w-full"
               >
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
+                  className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
+                >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-3">
@@ -423,24 +448,44 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       </span>
                     </div>
 
-                    <div className="text-sm text-slate-600 space-y-1">
+                    {/* Essential Info - Always Visible */}
+                    <div className="text-sm text-slate-600 mb-3">
                       <div className="flex items-center space-x-2">
                         <span>Added: {new Date(customer.created_at).toLocaleDateString()}</span>
                       </div>
-                      {customer.address_details && (
-                        <>
+                    </div>
+
+                    {/* Collapsible Address Details */}
+                    {customer.address_details && (customer.address_details.street || customer.address_details.city || customer.address_details.state || customer.address_details.zipCode) && (
+                      <Accordion
+                        title="Contact Details"
+                        icon={User}
+                        defaultExpanded={false}
+                        className="bg-slate-50/50 border-slate-200"
+                        titleClassName="hover:bg-slate-100"
+                      >
+                        <div className="space-y-2 text-sm text-slate-600">
                           {customer.address_details.street && (
-                            <div>{customer.address_details.street}</div>
+                            <div className="flex items-start space-x-2">
+                              <Home className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
+                              <span>{customer.address_details.street}</span>
+                            </div>
                           )}
                           {customer.address_details.city && customer.address_details.state && (
-                            <div>{customer.address_details.city}, {customer.address_details.state}</div>
+                            <div className="flex items-start space-x-2">
+                              <MapPin className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
+                              <span>{customer.address_details.city}, {customer.address_details.state}</span>
+                            </div>
                           )}
                           {customer.address_details.zipCode && (
-                            <div>{customer.address_details.zipCode}</div>
+                            <div className="flex items-start space-x-2">
+                              <span className="w-3 h-3 flex-shrink-0"></span>
+                              <span>{customer.address_details.zipCode}</span>
+                            </div>
                           )}
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </Accordion>
+                    )}
                   </div>
 
                   <div className="flex flex-col w-full gap-3">
@@ -451,14 +496,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     />
 
                     {/* Log Call Button - Mobile optimized */}
-                    <motion.button
+                    <Button
                       onClick={() => {
                         console.log('📝 Log Call clicked for:', customer.name);
                         handleDispositionCustomer(customer);
                       }}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm sm:text-base font-semibold flex items-center justify-center space-x-2 min-h-[48px] sm:min-h-[56px] touch-manipulation relative z-20 active:scale-95"
-                      whileTap={{ scale: 0.95 }}
-                      title="Log call disposition"
+                      variant="log"
+                      size="lg"
+                      className="w-full flex items-center justify-center space-x-2 relative z-20"
                       style={{ pointerEvents: 'auto' }}
                     >
                       <motion.div
@@ -468,44 +513,45 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         <Phone className="w-5 h-5" />
                       </motion.div>
                       <span>Log Call</span>
-                    </motion.button>
+                    </Button>
 
                     {/* Secondary Actions - Mobile optimized */}
                     <div className="flex justify-center space-x-2 pt-2">
-                      <motion.button
+                      <Button
                         onClick={() => handleViewProfile(customer)}
-                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                        whileTap={{ scale: 0.95 }}
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center space-x-1"
                         title="View customer profile"
                       >
                         <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">Profile</span>
-                      </motion.button>
-                      <motion.button
+                        <span className="hidden sm:inline font-medium">View Profile</span>
+                      </Button>
+                      <Button
                         onClick={() => handleViewCallHistory(customer)}
-                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-slate-700 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                        whileTap={{ scale: 0.95 }}
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center space-x-1"
                         title="View call history"
                       >
                         <History className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">History</span>
-                      </motion.button>
-                      <motion.button
+                        <span className="hidden sm:inline font-medium">View History</span>
+                      </Button>
+                      <Button
                         onClick={() => handleDeleteCustomer(customer.id)}
-                        className="bg-white/90 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg shadow-red-500/10 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300 text-xs sm:text-sm flex items-center space-x-1 text-red-600 min-h-[40px] min-w-[40px] sm:min-h-[48px] sm:min-w-[48px] touch-manipulation"
-                        whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
-                        whileTap={{ scale: 0.95 }}
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center space-x-1 text-red-600"
                         title="Delete customer"
                       >
                         <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">Delete</span>
-                      </motion.button>
+                        <span className="hidden sm:inline font-medium">Remove</span>
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+                </motion.div>
+              </SwipeableCard>
             ))
           )}
         </div>
@@ -561,8 +607,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-secondary-500" />
                 <div className="text-lg sm:text-xl font-bold text-secondary-600">{stats.todaysCalls}</div>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Today's Calls</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">Completed today</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">My Calls Today</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">Calls I've completed</p>
             </motion.div>
 
             {/* Reminders */}
@@ -575,8 +621,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-luxury-gold" />
                 <div className="text-lg sm:text-xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Reminders</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">Due today</p>
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Call Queue</h3>
+              <p className="text-slate-600 text-xs sm:text-sm">Calls to make today</p>
             </motion.div>
 
             {/* Active Customers */}
@@ -598,7 +644,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
       {/* Call Status Breakdown */}
       <div className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
-        <h3 className="text-xl font-luxury font-semibold text-slate-800 mb-4">Call Status Overview</h3>
+        <h3 className="text-xl font-luxury font-semibold text-slate-800 mb-4">Call Results Summary</h3>
         <div className="grid grid-cols-3 gap-3">
           {Object.entries(stats.callStatusBreakdown).map(([status, count]) => (
             <div key={status} className="text-center">
@@ -630,54 +676,108 @@ const Dashboard = ({ agentPin, onSignOut }) => {
         </div>
       ) : (
         <div className="flex flex-col gap-y-4">
-          {callRecords.map((record) => (
-            <div
-              key={record.id}
-              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <h3 className="text-lg font-semibold text-slate-800">
-                      {record.fcm_customers?.name}
-                    </h3>
-                    <motion.span
-                      className={`
-                        px-3 py-1.5 rounded-full text-xs font-semibold border-0
-                        ${getStatusColor(record.call_status)}
-                      `}
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, duration: 0.3 }}
-                    >
-                      {formatCallStatus(record.call_status)}
-                    </motion.span>
-                  </div>
+          {callRecords.map((record, index) => (
+            <div key={record.id} className="space-y-2">
+              {/* Disposition Tag Above Card */}
+              <div className="flex items-center space-x-3 px-2">
+                <motion.span
+                  className={`
+                    px-4 py-2 rounded-full text-sm font-bold border-2 shadow-lg flex-shrink-0
+                    ${getStatusColor(record.call_status)}
+                  `}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                >
+                  {formatCallStatus(record.call_status)}
+                </motion.span>
+              </div>
+              
+              <SwipeableCard
+                onSwipeLeft={() => {
+                  console.log('📝 Swipe left - Log Call for:', record.fcm_customers?.name);
+                  // For call records, this could open a form to edit the call log
+                  handleDispositionCustomer(record.fcm_customers);
+                }}
+                onSwipeRight={() => {
+                  console.log('📞 Swipe right - Call Again for:', record.fcm_customers?.name);
+                  handleCallCustomer(record.fcm_customers);
+                }}
+                leftAction={{
+                  icon: Phone,
+                  label: 'Log Call',
+                  color: 'from-emerald-500 to-emerald-600'
+                }}
+                rightAction={{
+                  icon: PhoneCall,
+                  label: 'Call Again',
+                  color: 'from-blue-500 to-blue-600'
+                }}
+                className="w-full"
+              >
+                <div className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <h3 className="text-lg font-semibold text-slate-800">
+                        {record.fcm_customers?.name}
+                      </h3>
+                    </div>
 
-                  <div className="flex flex-col gap-y-2 text-sm text-slate-600">
-                    <div>Call time: {new Date(record.call_date).toLocaleTimeString()}</div>
-                    {record.remarks && (
-                      <div className="bg-slate-50 rounded-lg p-3">
-                        <p className="text-slate-700">{record.remarks}</p>
+                    {/* Essential Info - Always Visible */}
+                    <div className="text-sm text-slate-600 mb-3">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        <span>Call time: {new Date(record.call_date).toLocaleTimeString()}</span>
                       </div>
-                    )}
-                    {record.next_call_date && (
-                      <div className="flex items-center space-x-1 text-blue-600">
-                        <Calendar className="w-4 h-4" />
-                        <span>Next reminder: {new Date(record.next_call_date).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+
+                    {/* Collapsible Details */}
+                    <div className="space-y-3">
+                      {/* Notes Section */}
+                      {record.remarks && (
+                        <Accordion
+                          title="Call Notes"
+                          icon={User}
+                          defaultExpanded={false}
+                          className="bg-blue-50/50 border-blue-200"
+                          titleClassName="hover:bg-blue-100"
+                        >
+                          <div className="text-sm text-slate-700 bg-slate-50 rounded-lg p-3">
+                            <p className="leading-relaxed">{record.remarks}</p>
+                          </div>
+                        </Accordion>
+                      )}
+
+                      {/* Next Reminder */}
+                      {record.next_call_date && (
+                        <Accordion
+                          title={`Next follow-up: ${new Date(record.next_call_date).toLocaleDateString()}`}
+                          icon={Calendar}
+                          defaultExpanded={false}
+                          className="bg-green-50/50 border-green-200"
+                          titleClassName="hover:bg-green-100"
+                        >
+                          <div className="text-sm text-slate-600">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="w-3 h-3 text-green-600" />
+                              <span>Scheduled for: {new Date(record.next_call_date).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </Accordion>
+                      )}
+                    </div>
                 </div>
 
                 <div className="flex justify-end mt-4">
-                  <motion.button
+                  <Button
                     onClick={() => {
                       console.log('🔄 Call Again clicked for:', record.fcm_customers?.name);
                       handleCallCustomer(record.fcm_customers);
                     }}
-                    className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-6 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center space-x-3 min-h-[56px] touch-manipulation relative z-20 active:scale-95"
-                    whileTap={{ scale: 0.95 }}
+                    variant="call"
+                    size="lg"
+                    className="flex items-center space-x-3 relative z-20"
                     style={{ pointerEvents: 'auto' }}
                   >
                     <motion.div
@@ -687,9 +787,11 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       <PhoneCall className="w-5 h-5" />
                     </motion.div>
                     <span>Call Again</span>
-                  </motion.button>
+                  </Button>
                 </div>
               </div>
+              </div>
+              </SwipeableCard>
             </div>
           ))}
         </div>
@@ -701,9 +803,9 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const renderActivityLogs = () => (
     <div className="flex flex-col gap-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-luxury font-semibold text-slate-800">Activity Logs</h2>
+        <h2 className="text-xl font-luxury font-semibold text-slate-800">Recent Activity</h2>
         <div className="text-lg text-slate-600 font-medium">
-          System activities and profile changes
+          Your latest actions and updates
         </div>
       </div>
 
@@ -742,14 +844,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       {/* Main Content */}
       <div className="w-full max-w-md mx-auto px-4 py-2">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="flex items-center justify-center space-x-3 mb-2">
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center space-x-3 mb-4">
             <Shield className="w-6 h-6 text-primary-500 animate-glow" />
-            <h1 className="text-xl font-luxury font-semibold text-slate-800">
+            <h1 className="text-lg font-luxury font-semibold text-slate-800">
               Call Tracker Pro
             </h1>
           </div>
-          <div className="text-lg text-slate-600 font-medium">
+          <div className="text-base text-slate-600 font-medium">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'short',
@@ -766,7 +868,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           animate={{ y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
         >
-          <div className="flex justify-around w-full p-2">
+          <div className="flex justify-between w-full px-4 py-3 gap-1">
             {tabs.map((tab, index) => {
               const IconComponent = tab.icon;
               const isActive = activeTab === tab.id;
@@ -778,12 +880,12 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     setActiveTab(tab.id);
                   }}
                   className={`
-                    relative flex flex-col items-center justify-center space-y-2 z-30
-                    px-4 py-4 rounded-full font-semibold transition-all cursor-pointer select-none
-                    min-h-[72px] min-w-[64px] w-full touch-manipulation active:scale-95
+                    relative flex flex-col items-center justify-center space-y-3 z-30
+                    px-3 py-3 rounded-2xl transition-all cursor-pointer select-none
+                    min-h-[68px] min-w-[56px] flex-1 touch-manipulation active:scale-95
                     ${isActive
                       ? 'text-white shadow-lg'
-                      : 'text-slate-600 hover:text-slate-800 hover:bg-white/50'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-white/30'
                     }
                   `}
                   whileTap={{ scale: 0.95 }}
@@ -793,13 +895,13 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 >
                   {/* Animated bubble background */}
                   <motion.div
-                    className="absolute inset-0 rounded-full"
+                    className="absolute inset-0 rounded-2xl"
                     initial={false}
                     animate={{
                       background: isActive
                         ? 'linear-gradient(135deg, #FFD700 0%, #09c6f9 100%)'
                         : 'transparent',
-                      scale: isActive ? 1 : 0.9,
+                      scale: isActive ? 1 : 0.95,
                     }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
                   />
@@ -807,18 +909,18 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   {/* Icon with gradient fill when active */}
                   <motion.div
                     animate={{
-                      color: isActive ? '#ffffff' : '#64748b',
+                      color: isActive ? '#ffffff' : '#94a3b8',
                       filter: isActive ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.3))' : 'none'
                     }}
                     transition={{ duration: 0.3 }}
                   >
-                    <IconComponent className="w-6 h-6" />
+                    <IconComponent className="w-5 h-5" />
                   </motion.div>
 
                   <motion.span
-                    className="text-sm font-semibold"
+                    className={`text-xs ${isActive ? 'font-bold' : 'font-medium'}`}
                     animate={{
-                      color: isActive ? '#ffffff' : '#64748b'
+                      color: isActive ? '#ffffff' : '#94a3b8'
                     }}
                     transition={{ duration: 0.3 }}
                   >
@@ -856,7 +958,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       >
         <motion.button
           onClick={onSignOut}
-          className="bg-white/90 backdrop-blur-lg p-3 rounded-full shadow-lg border border-white/20 min-h-[48px] min-w-[48px] flex items-center justify-center touch-manipulation"
+          className="bg-white/90 backdrop-blur-lg p-3 rounded-full shadow-lg border border-white/30 min-h-[40px] min-w-[40px] flex items-center justify-center touch-manipulation"
           whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.95)" }}
           whileTap={{ scale: 0.95 }}
         >
@@ -894,17 +996,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/30"
           >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-luxury font-semibold text-slate-800">
-                  Customer Profile
+                  Contact Details
                 </h2>
                 <p className="text-slate-600">
-                  View and manage customer information
+                  View and update contact information
                 </p>
               </div>
               <button
@@ -1034,24 +1136,24 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
-                <motion.button
+                <Button
                   onClick={() => handleViewCallHistory(editingCustomer)}
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-6 py-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
+                  variant="primary"
+                  size="lg"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-3"
                 >
                   <History className="w-5 h-5" />
                   <span>View History</span>
-                </motion.button>
-                <motion.button
+                </Button>
+                <Button
                   onClick={handleEditFromProfile}
-                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-full px-6 py-4 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
+                  variant="primary"
+                  size="lg"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-3"
                 >
                   <Edit className="w-5 h-5" />
-                  <span>Edit Profile</span>
-                </motion.button>
+                  <span>Update Contact</span>
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -1072,17 +1174,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/30"
           >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-luxury font-semibold text-slate-800">
-                  {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                  {editingCustomer ? 'Update Contact' : 'Add New Contact'}
                 </h2>
                 <p className="text-slate-600">
-                  {editingCustomer ? 'Update customer information' : 'Enter customer details'}
+                  {editingCustomer ? 'Update contact details' : 'Enter contact information'}
                 </p>
               </div>
               <button
@@ -1108,14 +1210,14 @@ const Dashboard = ({ agentPin, onSignOut }) => {
               {/* Customer Name */}
               <div>
                 <label className="block text-base font-semibold text-slate-800 mb-3">
-                  Customer Name *
+                  Contact Name *
                 </label>
                 <input
                   type="text"
                   value={customerForm.name}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
                   className={`w-full p-4 rounded-xl border-2 bg-white/80 backdrop-blur-sm text-lg font-medium min-h-[56px] transition-all duration-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${formErrors.name ? 'border-red-500' : 'border-slate-300'}`}
-                  placeholder="Enter customer name"
+                  placeholder="Enter contact name"
                   required
                 />
                 {formErrors.name && (
@@ -1226,7 +1328,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
 
               {/* Submit Actions */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200">
-                <motion.button
+                <Button
                   type="button"
                   onClick={() => {
                     setShowCustomerForm(false);
@@ -1240,23 +1342,23 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     });
                     setFormErrors({});
                   }}
-                  className="w-full sm:w-auto bg-white/90 backdrop-blur-lg text-slate-700 rounded-full px-6 py-4 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation"
-                  whileHover={{ scale: 1.02, backgroundColor: "rgba(255,255,255,0.95)" }}
-                  whileTap={{ scale: 0.98 }}
+                  variant="secondary"
+                  size="lg"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-3"
                 >
                   <X className="w-5 h-5" />
-                  <span>Cancel</span>
-                </motion.button>
-                <motion.button
+                  <span>Discard Changes</span>
+                </Button>
+                <Button
                   type="submit"
                   disabled={!customerForm.name.trim() || !customerForm.mobile1}
-                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full px-6 py-4 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold flex items-center justify-center space-x-3 min-h-[64px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
+                  variant="primary"
+                  size="lg"
+                  className="w-full sm:w-auto flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-5 h-5" />
-                  <span>{editingCustomer ? 'Update Customer' : 'Add Customer'}</span>
-                </motion.button>
+                  <span>{editingCustomer ? 'Save Changes' : 'Add New Contact'}</span>
+                </Button>
               </div>
             </form>
           </motion.div>
@@ -1277,17 +1379,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 50 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/30"
           >
 
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-luxury font-semibold text-slate-800">
-                  Call History - {selectedHistoryCustomer.name}
+                  Call Log - {selectedHistoryCustomer.name}
                 </h2>
                 <p className="text-slate-600">
-                  Historical remarks and interactions
+                  Previous call records and outcomes
                 </p>
               </div>
               <button

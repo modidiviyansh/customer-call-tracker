@@ -46,7 +46,7 @@ function App() {
           borderRadius: '8px',
           boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
         }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626', marginBottom: '16px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#dc2626', marginBottom: '20px' }}>
             ⚠️ Configuration Error
           </h1>
           <p style={{ color: '#374151', marginBottom: '16px', lineHeight: '1.6' }}>

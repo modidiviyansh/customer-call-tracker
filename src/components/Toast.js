@@ -20,25 +20,25 @@ const Toast = ({ message, type = 'info', duration = 4000, onClose }) => {
     switch (type) {
       case 'success':
         return {
-          bg: 'bg-gradient-to-r from-green-500 to-emerald-500',
+          bg: 'bg-gradient-to-r from-green-700 to-green-600',
           icon: CheckCircle,
           iconColor: 'text-white'
         };
       case 'error':
         return {
-          bg: 'bg-gradient-to-r from-red-500 to-rose-500',
+          bg: 'bg-gradient-to-r from-red-700 to-red-600',
           icon: AlertCircle,
           iconColor: 'text-white'
         };
       case 'warning':
         return {
-          bg: 'bg-gradient-to-r from-orange-500 to-amber-500',
+          bg: 'bg-gradient-to-r from-orange-700 to-amber-700',
           icon: AlertTriangle,
           iconColor: 'text-white'
         };
       default:
         return {
-          bg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+          bg: 'bg-gradient-to-r from-blue-800 to-blue-700',
           icon: Info,
           iconColor: 'text-white'
         };
@@ -55,7 +55,7 @@ const Toast = ({ message, type = 'info', duration = 4000, onClose }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className={`fixed top-4 left-4 right-4 z-50 ${bg} text-white p-4 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/20 max-w-md mx-auto`}
+          className={`fixed top-4 left-4 right-4 z-50 ${bg} text-white p-4 rounded-2xl shadow-xl backdrop-blur-xl border border-white/30 max-w-md mx-auto`}
         >
           <div className="flex items-start space-x-3">
             <Icon className={`w-5 h-5 ${iconColor} mt-0.5 flex-shrink-0`} />

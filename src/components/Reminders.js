@@ -5,6 +5,9 @@ import { supabase } from '../services/supabase';
 import CallDisposition from './CallDisposition';
 import CSVImport from './CSVImport';
 import { useToast } from './Toast';
+import Accordion from './Accordion';
+import SwipeableCard from './SwipeableCard';
+import { Button } from './index';
 
 const Reminders = ({ agentPin }) => {
   const { success, error } = useToast();
@@ -292,14 +295,14 @@ const Reminders = ({ agentPin }) => {
 
   const getStatusColor = (status) => {
     const colors = {
-      follow_up: 'text-blue-600 bg-blue-50 border-blue-200',
-      completed: 'text-green-600 bg-green-50 border-green-200',
-      no_answer: 'text-gray-600 bg-gray-50 border-gray-200',
-      busy: 'text-orange-600 bg-orange-50 border-orange-200',
-      invalid: 'text-red-600 bg-red-50 border-red-200',
-      not_interested: 'text-red-500 bg-red-50 border-red-200',
+      follow_up: 'text-indigo-700 bg-indigo-100 border-indigo-300 font-semibold',
+      completed: 'text-emerald-700 bg-emerald-100 border-emerald-300 font-semibold',
+      no_answer: 'text-slate-700 bg-slate-100 border-slate-300 font-semibold',
+      busy: 'text-amber-700 bg-amber-100 border-amber-300 font-semibold',
+      invalid: 'text-red-700 bg-red-100 border-red-300 font-semibold',
+      not_interested: 'text-purple-700 bg-purple-100 border-purple-300 font-semibold',
     };
-    return colors[status] || 'text-gray-600 bg-gray-50 border-gray-200';
+    return colors[status] || 'text-slate-700 bg-slate-100 border-slate-300 font-semibold';
   };
 
 
@@ -322,7 +325,7 @@ const Reminders = ({ agentPin }) => {
   const reminderTabs = [
     { id: 'overdue', label: 'Overdue', icon: AlertTriangle, color: 'text-red-600', data: reminders.overdue },
     { id: 'today', label: 'Today', icon: Clock, color: 'text-blue-600', data: reminders.today },
-    { id: 'upcoming', label: 'This Week', icon: Calendar, color: 'text-green-600', data: reminders.upcoming }
+    { id: 'upcoming', label: 'Coming Week', icon: Calendar, color: 'text-green-600', data: reminders.upcoming }
   ];
 
 
@@ -331,13 +334,13 @@ const Reminders = ({ agentPin }) => {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4">
         <h2 className="text-xl font-luxury font-semibold text-slate-800">
-          Call Reminders
+          Call Queue
         </h2>
         <button
           onClick={() => handleImportCSV('reminders')}
-          className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full px-3 py-2 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-xs sm:text-sm touch-manipulation"
+          className="bg-gradient-to-r from-green-700 to-green-600 text-white rounded-full px-4 py-2 shadow-lg shadow-green-500/25 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 flex items-center space-x-2 font-semibold min-h-[44px] text-sm touch-manipulation"
         >
-          <Upload className="w-3 h-3 sm:w-4 sm:h-4" />
+          <Upload className="w-4 h-4" />
           <span>Import</span>
         </button>
       </div>
@@ -359,7 +362,7 @@ const Reminders = ({ agentPin }) => {
                   flex items-center space-x-3 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 relative z-20
                   min-h-[56px] whitespace-nowrap touch-manipulation cursor-pointer select-none flex-shrink-0
                   ${isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-xl shadow-blue-500/25'
+                    ? 'bg-gradient-to-r from-blue-800 to-blue-700 text-white shadow-xl shadow-blue-500/25'
                     : 'bg-white/80 text-slate-600 hover:text-slate-800 hover:bg-white hover:shadow-lg border border-slate-200/50'
                   }
                 `}
@@ -377,10 +380,14 @@ const Reminders = ({ agentPin }) => {
                 {tab.data.length > 0 && (
                   <motion.span
                     className={`
-                      text-xs rounded-full px-3 py-1.5 font-bold min-w-[24px] h-6 flex items-center justify-center
+                      text-xs rounded-full px-3 py-1.5 font-bold min-w-[24px] h-6 flex items-center justify-center border-2
                       ${isActive
-                        ? 'bg-white/30 text-white backdrop-blur-sm'
-                        : 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-md'
+                        ? 'bg-white/30 text-white backdrop-blur-sm border-white/40'
+                        : tab.id === 'overdue'
+                        ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md border-red-400'
+                        : tab.id === 'today'
+                        ? 'bg-gradient-to-r from-blue-800 to-blue-700 text-white shadow-md border-blue-400'
+                        : 'bg-gradient-to-r from-green-700 to-green-600 text-white shadow-md border-green-400'
                       }
                     `}
                     initial={{ scale: 0, rotate: -180 }}
@@ -414,18 +421,18 @@ const Reminders = ({ agentPin }) => {
         <div className="sticky top-[88px] z-20 bg-white/90 backdrop-blur-xl border-b border-slate-200/30 px-4 py-4">
           <div className="flex items-center space-x-3 mb-3">
             <Filter className="w-4 h-4 text-slate-500" />
-            <span className="text-sm font-semibold text-slate-700">Filter by disposition:</span>
+            <span className="text-sm font-semibold text-slate-700">Filter by outcome:</span>
           </div>
           <div className="flex space-x-3 overflow-x-auto scrollbar-hide">
             {/* All Filter Pill */}
             <motion.button
               onClick={() => setSelectedDispositions([])}
               className={`
-                flex items-center space-x-2 px-4 py-3 rounded-2xl font-semibold whitespace-nowrap transition-all duration-300 relative
+                flex items-center space-x-2 px-4 py-3 rounded-2xl font-semibold whitespace-nowrap transition-all duration-300 relative border-2
                 min-h-[44px] flex-shrink-0
                 ${selectedDispositions.length === 0
-                  ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-lg shadow-slate-500/25'
-                  : 'bg-white/80 text-slate-600 hover:text-slate-800 hover:bg-white hover:shadow-md border border-slate-200/50'
+                  ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white shadow-lg shadow-slate-500/30 border-slate-500'
+                  : 'bg-white/80 text-slate-600 hover:text-slate-800 hover:bg-white hover:shadow-md border-slate-200/50 hover:border-slate-300'
                 }
               `}
               whileTap={{ scale: 0.95 }}
@@ -435,13 +442,13 @@ const Reminders = ({ agentPin }) => {
                 y: selectedDispositions.length === 0 ? -1 : 0
               }}
             >
-              <span className="text-sm">All</span>
+              <span className="text-sm">Show All</span>
               <motion.span
                 className={`
                   text-xs rounded-full px-2.5 py-1 font-bold min-w-[20px] h-5 flex items-center justify-center
                   ${selectedDispositions.length === 0
                     ? 'bg-white/30 text-white backdrop-blur-sm'
-                    : 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                    : 'bg-gradient-to-r from-slate-600 to-slate-700 text-white'
                   }
                 `}
                 initial={{ scale: 0 }}
@@ -456,6 +463,34 @@ const Reminders = ({ agentPin }) => {
             {availableDispositions.map((disposition) => {
               const count = reminders[activeTab]?.filter(r => r.call_status === disposition).length || 0;
               const isSelected = selectedDispositions.includes(disposition);
+              
+              // Get status-specific colors for filter pills
+              const getFilterColors = (status) => {
+                const colors = {
+                  completed: isSelected
+                    ? 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200',
+                  no_answer: isSelected
+                    ? 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg shadow-slate-500/25'
+                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200',
+                  busy: isSelected
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25'
+                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200',
+                  follow_up: isSelected
+                    ? 'bg-gradient-to-r from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-500/25'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200',
+                  invalid: isSelected
+                    ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25'
+                    : 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200',
+                  not_interested: isSelected
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/25'
+                    : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200',
+                };
+                return colors[status] || (isSelected
+                  ? 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-lg shadow-slate-500/25'
+                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200');
+              };
+              
               return (
                 <motion.button
                   key={disposition}
@@ -467,12 +502,9 @@ const Reminders = ({ agentPin }) => {
                     );
                   }}
                   className={`
-                    flex items-center space-x-2 px-4 py-3 rounded-2xl font-semibold whitespace-nowrap transition-all duration-300 relative
+                    flex items-center space-x-2 px-4 py-3 rounded-2xl font-semibold whitespace-nowrap transition-all duration-300 relative border-2
                     min-h-[44px] flex-shrink-0
-                    ${isSelected
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
-                      : 'bg-white/80 text-slate-600 hover:text-slate-800 hover:bg-white hover:shadow-md border border-slate-200/50'
-                    }
+                    ${getFilterColors(disposition)}
                   `}
                   whileTap={{ scale: 0.95 }}
                   whileHover={{ scale: 1.02 }}
@@ -487,7 +519,7 @@ const Reminders = ({ agentPin }) => {
                       text-xs rounded-full px-2.5 py-1 font-bold min-w-[20px] h-5 flex items-center justify-center
                       ${isSelected
                         ? 'bg-white/30 text-white backdrop-blur-sm'
-                        : 'bg-gradient-to-r from-emerald-500 to-green-500 text-white'
+                        : 'bg-gradient-to-r from-slate-600 to-slate-700 text-white'
                       }
                     `}
                     initial={{ scale: 0, rotate: -180 }}
@@ -498,7 +530,7 @@ const Reminders = ({ agentPin }) => {
                   </motion.span>
                   {isSelected && (
                     <motion.div
-                      className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10"
+                      className="absolute inset-0 rounded-2xl bg-white/10"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.3 }}
@@ -526,18 +558,18 @@ const Reminders = ({ agentPin }) => {
               <Clock className="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-slate-600 mb-2">
                 {selectedDispositions.length === 0
-                  ? (activeTab === 'overdue' && 'No overdue reminders') ||
-                    (activeTab === 'today' && 'No reminders for today') ||
-                    (activeTab === 'upcoming' && 'No upcoming reminders this week')
-                  : `No ${selectedDispositions.map(d => formatStatus(d).toLowerCase()).join(' or ')} reminders ${activeTab === 'today' ? 'today' : activeTab === 'overdue' ? 'overdue' : 'this week'}`
+                  ? (activeTab === 'overdue' && 'No overdue calls') ||
+                    (activeTab === 'today' && 'No calls in queue for today') ||
+                    (activeTab === 'upcoming' && 'No upcoming calls this week')
+                  : `No ${selectedDispositions.map(d => formatStatus(d).toLowerCase()).join(' or ')} calls ${activeTab === 'today' ? 'today' : activeTab === 'overdue' ? 'overdue' : 'this week'}`
                 }
               </h3>
               <p className="text-base text-slate-500">
                 {selectedDispositions.length === 0
-                  ? (activeTab === 'overdue' && 'Great! All past reminders have been addressed.') ||
-                    (activeTab === 'today' && 'No calls scheduled for today.') ||
+                  ? (activeTab === 'overdue' && 'Great! All overdue calls have been handled.') ||
+                    (activeTab === 'today' && 'Your call queue is clear for today.') ||
                     (activeTab === 'upcoming' && 'No calls scheduled for the coming week.')
-                  : `No contacts with ${selectedDispositions.map(d => formatStatus(d).toLowerCase()).join(' or ')} status in this time period.`
+                  : `No contacts with ${selectedDispositions.map(d => formatStatus(d).toLowerCase()).join(' or ')} results in this time period.`
                 }
               </p>
             </motion.div>
@@ -553,31 +585,64 @@ const Reminders = ({ agentPin }) => {
               {getFilteredReminders().map((reminder, index) => {
                 const StatusIcon = getStatusIcon(reminder.call_status);
                 return (
-                  <motion.div
-                    key={reminder.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-                    className="w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300"
-                  >
-                    <div className="flex items-start justify-between gap-6">
-                      {/* Left Content Stack */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3 mb-4">
-                          <StatusIcon className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                          <h3 className="text-lg font-semibold text-slate-800 truncate">
-                            {reminder.fcm_customers?.name}
-                          </h3>
-                          <span className={`
-                            px-3 py-1 rounded-full text-xs font-medium border shadow-sm flex-shrink-0
-                            ${getStatusColor(reminder.call_status)}
-                          `}>
-                            {formatStatus(reminder.call_status)}
-                          </span>
-                        </div>
+                  <div key={reminder.id} className="space-y-2">
+                    {/* Disposition Tag Above Card */}
+                    <div className="flex items-center space-x-3 px-2">
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                        className="flex items-center space-x-2"
+                      >
+                        <StatusIcon className="w-4 h-4 text-slate-600" />
+                        <span className={`
+                          px-4 py-2 rounded-full text-sm font-bold border-2 shadow-lg flex-shrink-0
+                          ${getStatusColor(reminder.call_status)}
+                        `}>
+                          {formatStatus(reminder.call_status)}
+                        </span>
+                      </motion.div>
+                    </div>
+                    
+                    <SwipeableCard
+                      onSwipeLeft={() => {
+                        console.log('📝 Swipe left - Log Call for:', reminder.fcm_customers?.name);
+                        setSelectedCustomer(reminder.fcm_customers);
+                        setShowDisposition(true);
+                      }}
+                      onSwipeRight={() => {
+                        console.log('📞 Swipe right - Call Now for:', reminder.fcm_customers?.name);
+                        handleCallCustomer(reminder.fcm_customers);
+                      }}
+                      leftAction={{
+                        icon: Phone,
+                        label: 'Log Call',
+                        color: 'from-emerald-500 to-emerald-600'
+                      }}
+                      rightAction={{
+                        icon: PhoneCall,
+                        label: 'Call Now',
+                        color: 'from-blue-500 to-blue-600'
+                      }}
+                      className="w-full"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
+                        className="w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                      >
+                      <div className="flex items-start justify-between gap-6">
+                        {/* Left Content Stack */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-4">
+                            <h3 className="text-lg font-semibold text-slate-800 truncate">
+                              {reminder.fcm_customers?.name}
+                            </h3>
+                          </div>
 
-                        <div className="space-y-3">
-                          <div className="flex items-center space-x-2 text-base text-slate-600">
+                          {/* Essential Info - Always Visible */}
+                          <div className="flex items-center space-x-2 text-base text-slate-600 mb-3">
                             <Phone className="w-4 h-4 text-slate-500 flex-shrink-0" />
                             <span className="truncate">{reminder.fcm_customers?.mobile1 || 'No phone'}</span>
                             {reminder.fcm_customers?.mobile2 && (
@@ -585,28 +650,70 @@ const Reminders = ({ agentPin }) => {
                             )}
                           </div>
 
-                          <div className="flex items-center space-x-2 text-base text-slate-500">
-                            <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                            <span>
-                              {activeTab === 'overdue' && 'Next follow-up: '}
-                              {activeTab === 'today' && 'Due today: '}
-                              {activeTab === 'upcoming' && 'Scheduled: '}
-                              {new Date(reminder.next_call_date).toLocaleDateString()}
-                            </span>
-                          </div>
+                          {/* Collapsible Details */}
+                          <div className="space-y-3">
+                            {/* Schedule Information */}
+                            <Accordion
+                              title={`${activeTab === 'overdue' ? 'Next follow-up' : activeTab === 'today' ? 'Due today' : 'Scheduled for'}: ${new Date(reminder.next_call_date).toLocaleDateString()}`}
+                              icon={Calendar}
+                              defaultExpanded={false}
+                              className="bg-slate-50/50 border-slate-200"
+                              titleClassName="hover:bg-slate-100"
+                            >
+                              <div className="text-sm text-slate-600 space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium">Next follow-up:</span>
+                                  <span>{new Date(reminder.next_call_date).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  <span>Last called: {new Date(reminder.call_date).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            </Accordion>
 
-                          {reminder.remarks && (
-                            <div className="text-sm text-slate-700 bg-gradient-to-r from-slate-50 to-blue-50/30 rounded-xl p-4 border border-slate-100">
-                              <p className="font-medium text-slate-800 mb-1 text-xs uppercase tracking-wide">Latest Note</p>
-                              <p className="leading-relaxed">{reminder.remarks}</p>
-                            </div>
-                          )}
+                            {/* Notes Section */}
+                            {reminder.remarks && (
+                              <Accordion
+                                title="Latest Notes"
+                                icon={AlertCircle}
+                                defaultExpanded={false}
+                                className="bg-blue-50/50 border-blue-200"
+                                titleClassName="hover:bg-blue-100"
+                              >
+                                <div className="text-sm text-slate-700">
+                                  <p className="leading-relaxed">{reminder.remarks}</p>
+                                </div>
+                              </Accordion>
+                            )}
 
-                          <div className="flex items-center space-x-2 text-sm text-slate-400">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span>Last called: {new Date(reminder.call_date).toLocaleDateString()}</span>
+                            {/* Call History */}
+                            <Accordion
+                              title="View Call History"
+                              icon={History}
+                              defaultExpanded={false}
+                              className="bg-green-50/50 border-green-200"
+                              titleClassName="hover:bg-green-100"
+                            >
+                              <div className="space-y-3">
+                                <div className="text-sm text-slate-600">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                    <span className="font-medium">Latest call:</span>
+                                    <span>{new Date(reminder.call_date).toLocaleDateString()}</span>
+                                  </div>
+                                  <Button
+                                    onClick={() => handleViewTimeline(reminder.fcm_customers)}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="w-full flex items-center justify-center space-x-2"
+                                  >
+                                    <History className="w-4 h-4" />
+                                    <span>View Full History</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </Accordion>
                           </div>
-                        </div>
                       </div>
 
                       {/* Right Action Buttons */}
@@ -617,7 +724,7 @@ const Reminders = ({ agentPin }) => {
                             console.log('🔄 Call Now clicked for:', reminder.fcm_customers?.name);
                             handleCallCustomer(reminder.fcm_customers);
                           }}
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
+                          className="bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
                           style={{ pointerEvents: 'auto' }}
                         >
                           <PhoneCall className="w-4 h-4" />
@@ -631,7 +738,7 @@ const Reminders = ({ agentPin }) => {
                             setSelectedCustomer(reminder.fcm_customers);
                             setShowDisposition(true);
                           }}
-                          className="bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
+                          className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
                           style={{ pointerEvents: 'auto' }}
                         >
                           <Phone className="w-4 h-4" />
@@ -643,7 +750,7 @@ const Reminders = ({ agentPin }) => {
                             console.log('📅 Timeline view clicked for:', reminder.fcm_customers?.name);
                             handleViewTimeline(reminder.fcm_customers);
                           }}
-                          className="bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
+                          className="bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
                           style={{ pointerEvents: 'auto' }}
                         >
                           <History className="w-4 h-4" />
@@ -651,7 +758,9 @@ const Reminders = ({ agentPin }) => {
                         </button>
                       </div>
                     </div>
-                  </motion.div>
+                      </motion.div>
+                    </SwipeableCard>
+                </div>
                 );
               })}
             </motion.div>
@@ -682,14 +791,14 @@ const Reminders = ({ agentPin }) => {
             onClick={() => setShowTimeline(false)}
           >
             <motion.div
-              className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl"
+              className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl border border-white/30"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white p-6">
+              <div className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <History className="w-6 h-6" />

@@ -6,10 +6,10 @@ const HomePage = ({ onNavigateToDashboard }) => {
     <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-white mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6">
             Customer Call Tracker
           </h1>
-          <p className="text-xl text-white/90 mb-8">
+          <p className="text-lg text-white/90 mb-12">
             Premium mobile web experience with modern React stack
           </p>
           

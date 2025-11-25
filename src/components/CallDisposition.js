@@ -33,11 +33,11 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
   }, [availableMobileNumbers, calledMobileNumber]);
 
   const dispositionOptions = [
-    { value: 'completed', label: 'Completed', icon: CheckCircle, color: 'text-green-600' },
-    { value: 'no_answer', label: 'No Answer', icon: Phone, color: 'text-gray-600' },
-    { value: 'busy', label: 'Busy', icon: Phone, color: 'text-orange-600' },
-    { value: 'follow_up', label: 'Follow Up', icon: Clock, color: 'text-blue-600' },
-    { value: 'invalid', label: 'Invalid Number', icon: XCircle, color: 'text-red-600' },
+    { value: 'completed', label: 'Call Completed', icon: CheckCircle, color: 'text-green-600' },
+    { value: 'no_answer', label: 'No Response', icon: Phone, color: 'text-gray-600' },
+    { value: 'busy', label: 'Line Busy', icon: Phone, color: 'text-orange-600' },
+    { value: 'follow_up', label: 'Schedule Callback', icon: Clock, color: 'text-blue-600' },
+    { value: 'invalid', label: 'Number Not Working', icon: XCircle, color: 'text-red-600' },
     { value: 'not_interested', label: 'Not Interested', icon: UserX, color: 'text-red-500' },
   ];
 
@@ -88,7 +88,7 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 50 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-2xl bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-xl border border-white/20"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl shadow-xl bg-white/95 backdrop-blur-xl border border-white/30"
       >
         
         {/* Header */}
@@ -122,7 +122,7 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
           {/* Disposition Selection */}
           <div>
             <label className="block text-base font-semibold text-slate-800 mb-4">
-              Call Status *
+              Call Result *
             </label>
             <div className="grid grid-cols-1 gap-3">
               {dispositionOptions.map((option) => {
@@ -211,7 +211,7 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
           {/* Next Reminder */}
           <div>
             <label className="block text-base font-semibold text-slate-800 mb-3">
-              Next Reminder Date
+              Schedule Next Call
             </label>
             <input
               type="date"
@@ -240,14 +240,14 @@ const CallDisposition = ({ customer, agentPin, onClose, onSubmit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="btn-luxury-outline px-6 py-3 rounded-full min-h-[44px]"
+              className="bg-white/90 backdrop-blur-lg text-slate-700 border border-white/30 rounded-full px-6 py-3 shadow-lg shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300 text-base font-semibold min-h-[44px] hover:scale-105"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!disposition || loading}
-              className="btn-luxury px-8 py-3 rounded-full min-h-[44px] disabled:opacity-50 hover:scale-105"
+              className="bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-full px-8 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-base font-semibold min-h-[44px] disabled:opacity-50 hover:scale-105"
             >
               {loading ? 'Saving...' : 'Save Disposition'}
             </button>

@@ -9,20 +9,23 @@ const Button = ({
   disabled = false,
   ...props 
 }) => {
-  const baseClasses = 'font-semibold rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[44px] relative z-10 cursor-pointer select-none';
+  const baseClasses = 'font-semibold rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 relative z-10 cursor-pointer select-none';
   
   const variants = {
-    primary: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white focus:ring-purple-500 shadow-luxury-button active:scale-95',
-    secondary: 'bg-white/80 backdrop-blur-lg shadow-xl text-gray-700 border border-white/20 active:scale-95 focus:ring-gray-500',
+    primary: 'bg-gradient-to-r from-blue-700 to-blue-600 text-white focus:ring-blue-500 shadow-luxury-button active:scale-95',
+    secondary: 'bg-white/80 backdrop-blur-lg shadow-xl text-gray-700 border border-white/30 active:scale-95 focus:ring-gray-500',
     outline: 'border-2 border-transparent bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-gray-700 active:scale-95 focus:ring-purple-500 relative overflow-hidden',
     luxury: 'bg-gradient-to-r from-[#FFD700] to-[#09c6f9] text-white shadow-gradient active:scale-95 focus:ring-purple-500',
-    'luxury-outline': 'border-2 border-gradient-to-r from-[#FFD700] to-[#09c6f9] text-gray-700 bg-white/80 backdrop-blur-lg active:scale-95 focus:ring-purple-500'
+    'luxury-outline': 'border-2 border-gradient-to-r from-[#FFD700] to-[#09c6f9] text-gray-700 bg-white/80 backdrop-blur-lg active:scale-95 focus:ring-purple-500',
+    success: 'bg-gradient-to-r from-green-700 to-green-600 text-white focus:ring-green-500 shadow-luxury-button active:scale-95',
+    call: 'bg-gradient-to-r from-blue-800 to-blue-700 text-white focus:ring-blue-600 shadow-luxury-button active:scale-95',
+    log: 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white focus:ring-emerald-500 shadow-luxury-button active:scale-95'
   };
   
   const sizes = {
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg'
+    sm: 'px-3 py-2 text-sm min-h-[40px]', // Icon-only buttons
+    md: 'px-4 py-2 text-base min-h-[44px]', // Secondary actions
+    lg: 'px-4 py-3 text-base min-h-[48px] sm:min-h-[56px]' // Primary actions (mobile-first)
   };
   
   const classes = `${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`;
