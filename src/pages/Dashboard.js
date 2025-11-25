@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload, Home, MapPin, CheckCircle } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, CallNowDropdown, Button, Accordion, SwipeableCard } from '../components';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, SwipeableCard, SwipeableMobileCallCard } from '../components';
 import { validateIndianPIN, formatDateLocal, formatDateTimeLocal } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -429,150 +429,37 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             </div>
           ) : (
             customers.map((customer, index) => (
-              <SwipeableCard
+              <motion.div
                 key={customer.id}
-                onSwipeLeft={() => {
-                  console.log('📝 Swipe left - Log Call for:', customer.name);
-                  handleDispositionCustomer(customer);
-                }}
-                onSwipeRight={() => {
-                  console.log('📞 Swipe right - Call Now for:', customer.name);
-                  handleCallCustomer(customer);
-                }}
-                leftAction={{
-                  icon: Phone,
-                  label: 'Log Call',
-                  color: 'from-emerald-500 to-emerald-600'
-                }}
-                rightAction={{
-                  icon: PhoneCall,
-                  label: 'Call Now',
-                  color: 'from-blue-500 to-blue-600'
-                }}
-                className="w-full"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
               >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
-                  className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-                >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <h3 className="text-lg font-semibold text-slate-800">
-                        {customer.name}
-                      </h3>
-                      <span className="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                        {customer.mobile1}
-                        {customer.mobile2 && <span className="ml-1 text-xs text-slate-400">+{customer.mobile2 ? 1 : 0} more</span>}
-                      </span>
-                    </div>
-
-                    {/* Essential Info - Always Visible */}
-                    <div className="text-sm text-slate-600 mb-3">
-                      <div className="flex items-center space-x-2">
-                        <span>Added: {formatDateLocal(customer.created_at)}</span>
-                      </div>
-                    </div>
-
-                    {/* Collapsible Address Details */}
-                    {customer.address_details && (customer.address_details.street || customer.address_details.city || customer.address_details.state || customer.address_details.zipCode) && (
-                      <Accordion
-                        title="Contact Details"
-                        icon={User}
-                        defaultExpanded={false}
-                        className="bg-slate-50/50 border-slate-200"
-                        titleClassName="hover:bg-slate-100"
-                      >
-                        <div className="space-y-2 text-sm text-slate-600">
-                          {customer.address_details.street && (
-                            <div className="flex items-start space-x-2">
-                              <Home className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                              <span>{customer.address_details.street}</span>
-                            </div>
-                          )}
-                          {customer.address_details.city && customer.address_details.state && (
-                            <div className="flex items-start space-x-2">
-                              <MapPin className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                              <span>{customer.address_details.city}, {customer.address_details.state}</span>
-                            </div>
-                          )}
-                          {customer.address_details.zipCode && (
-                            <div className="flex items-start space-x-2">
-                              <span className="w-3 h-3 flex-shrink-0"></span>
-                              <span>{customer.address_details.zipCode}</span>
-                            </div>
-                          )}
-                        </div>
-                      </Accordion>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col w-full gap-3">
-                    {/* Call Now Dropdown - Mobile optimized */}
-                    <CallNowDropdown
-                      customer={customer}
-                      onCallInitiated={handleCallInitiated}
-                    />
-
-                    {/* Log Call Button - Mobile optimized */}
-                    <Button
-                      onClick={() => {
-                        console.log('📝 Log Call clicked for:', customer.name);
-                        handleDispositionCustomer(customer);
-                      }}
-                      variant="log"
-                      size="lg"
-                      className="w-full flex items-center justify-center space-x-2 relative z-20"
-                      style={{ pointerEvents: 'auto' }}
-                    >
-                      <motion.div
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                      >
-                        <Phone className="w-5 h-5" />
-                      </motion.div>
-                      <span>Log Call</span>
-                    </Button>
-
-                    {/* Secondary Actions - Mobile optimized */}
-                    <div className="flex justify-center space-x-2 pt-2">
-                      <Button
-                        onClick={() => handleViewProfile(customer)}
-                        variant="secondary"
-                        size="sm"
-                        className="flex items-center space-x-1"
-                        title="View customer profile"
-                      >
-                        <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">View Profile</span>
-                      </Button>
-                      <Button
-                        onClick={() => handleViewCallHistory(customer)}
-                        variant="secondary"
-                        size="sm"
-                        className="flex items-center space-x-1"
-                        title="View call history"
-                      >
-                        <History className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">View History</span>
-                      </Button>
-                      <Button
-                        onClick={() => handleDeleteCustomer(customer.id)}
-                        variant="secondary"
-                        size="sm"
-                        className="flex items-center space-x-1 text-red-600"
-                        title="Delete customer"
-                      >
-                        <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline font-medium">Remove</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                </motion.div>
-              </SwipeableCard>
+                <SwipeableMobileCallCard
+                  customer={customer}
+                  onCallCustomer={(customerWithNumber) => {
+                    console.log('📞 Call initiated for:', customerWithNumber.name);
+                    handleCallCustomer(customerWithNumber);
+                  }}
+                  onLogCall={(customer) => {
+                    console.log('📝 Log call for:', customer.name);
+                    handleDispositionCustomer(customer);
+                  }}
+                  onViewProfile={(customer) => {
+                    console.log('👤 View profile for:', customer.name);
+                    handleViewProfile(customer);
+                  }}
+                  onViewHistory={(customer) => {
+                    console.log('📋 View history for:', customer.name);
+                    handleViewCallHistory(customer);
+                  }}
+                  onDeleteCustomer={(customerId) => {
+                    console.log('🗑️ Delete customer:', customerId);
+                    handleDeleteCustomer(customerId);
+                  }}
+                  className="w-full"
+                />
+              </motion.div>
             ))
           )}
         </div>
