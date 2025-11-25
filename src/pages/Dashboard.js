@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload, Home, MapPin } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, Trash2, X, PhoneCall, User, History, Upload, Home, MapPin, CheckCircle } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobileNumberManager, CallNowDropdown, Button, Accordion, SwipeableCard } from '../components';
-import { validateIndianPIN } from '../utils';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, CallNowDropdown, Button, Accordion, SwipeableCard } from '../components';
+import { validateIndianPIN, formatDateLocal, formatDateTimeLocal } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
   const [activeTab, setActiveTab] = useState('customers');
@@ -378,20 +378,41 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           </div>
         </div>
 
-        {/* Pagination Controls (Top) */}
+        {/* Responsive Pagination Controls (Top) */}
         {customers.length > 0 && (
-          <ServerPagination
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            onPageChange={goToPage}
-            onPageSizeChange={changePageSize}
-            showSearch={false}
-            showInfo={true}
-            loading={customersLoading}
-            serverName="Supabase"
-          />
+          <div className="hidden md:block">
+            <ServerPagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              showSearch={false}
+              showInfo={true}
+              loading={customersLoading}
+              serverName="Supabase"
+            />
+          </div>
+        )}
+
+        {/* Mobile Pagination */}
+        {customers.length > 0 && (
+          <div className="md:hidden">
+            <MobilePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              loading={customersLoading}
+              serverName="Supabase"
+              loadMoreText="Load More Customers"
+              loadMoreLoadingText="Loading..."
+              showPrevNext={true}
+              showLoadMore={true}
+            />
+          </div>
         )}
 
         {/* Customers List */}
@@ -451,7 +472,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     {/* Essential Info - Always Visible */}
                     <div className="text-sm text-slate-600 mb-3">
                       <div className="flex items-center space-x-2">
-                        <span>Added: {new Date(customer.created_at).toLocaleDateString()}</span>
+                        <span>Added: {formatDateLocal(customer.created_at)}</span>
                       </div>
                     </div>
 
@@ -556,20 +577,43 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           )}
         </div>
 
-        {/* Pagination Controls (Bottom) */}
+        {/* Responsive Pagination Controls (Bottom) */}
         {customers.length > 0 && (
-          <ServerPagination
-            currentPage={currentPage}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            onPageChange={goToPage}
-            onPageSizeChange={changePageSize}
-            showSearch={false}
-            showInfo={false}
-            loading={customersLoading}
-            serverName="Supabase"
-          />
+          <div className="hidden md:block">
+            <ServerPagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              showSearch={false}
+              showInfo={false}
+              showJumpToPage={false}
+              loading={customersLoading}
+              serverName="Supabase"
+            />
+          </div>
+        )}
+
+        {/* Mobile Pagination Bottom */}
+        {customers.length > 0 && (
+          <div className="md:hidden">
+            <MobilePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+              loading={customersLoading}
+              serverName="Supabase"
+              loadMoreText="Load More"
+              loadMoreLoadingText="Loading..."
+              showPrevNext={false}
+              showLoadMore={true}
+              showInfo={false}
+            />
+          </div>
         )}
       </div>
     );
@@ -728,7 +772,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     <div className="text-sm text-slate-600 mb-3">
                       <div className="flex items-center space-x-2">
                         <Clock className="w-3 h-3 text-slate-400" />
-                        <span>Call time: {new Date(record.call_date).toLocaleTimeString()}</span>
+                        <span>Call time: {formatDateTimeLocal(record.call_date).split(' ')[1]}</span>
                       </div>
                     </div>
 
@@ -752,7 +796,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       {/* Next Reminder */}
                       {record.next_call_date && (
                         <Accordion
-                          title={`Next follow-up: ${new Date(record.next_call_date).toLocaleDateString()}`}
+                          title={`Next follow-up: ${formatDateLocal(record.next_call_date)}`}
                           icon={Calendar}
                           defaultExpanded={false}
                           className="bg-green-50/50 border-green-200"
@@ -761,7 +805,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                           <div className="text-sm text-slate-600">
                             <div className="flex items-center space-x-2">
                               <Calendar className="w-3 h-3 text-green-600" />
-                              <span>Scheduled for: {new Date(record.next_call_date).toLocaleDateString()}</span>
+                              <span>Scheduled for: {formatDateLocal(record.next_call_date)}</span>
                             </div>
                           </div>
                         </Accordion>
@@ -943,7 +987,167 @@ const Dashboard = ({ agentPin, onSignOut }) => {
         >
           {activeTab === 'customers' && renderCustomers()}
           {activeTab === 'overview' && renderOverview()}
-          {activeTab === 'reminders' && <Reminders agentPin={agentPin} />}
+          {activeTab === 'reminders' && (
+            <div className="space-y-6">
+              {/* Inline Call Status Overview - Eye Level Position */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="glass-card-gradient p-6 shadow-gradient border border-white/20"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-luxury font-semibold text-slate-800">
+                      Live Call Status
+                    </h2>
+                    <p className="text-slate-600 text-sm">
+                      Real-time overview of call dispositions
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-slate-600 font-medium">Live</span>
+                  </div>
+                </div>
+
+                {/* Status Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {/* Busy Status - Emphasized */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="relative overflow-hidden"
+                  >
+                    <div className="bg-gradient-to-br from-amber-600 to-orange-700 rounded-2xl p-4 text-white shadow-xl border-2 border-amber-400/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <Phone className="w-6 h-6 text-amber-100" />
+                        <div className="w-2 h-2 bg-amber-200 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="text-2xl font-bold text-white mb-1">
+                        {stats.callStatusBreakdown?.busy || 0}
+                      </div>
+                      <div className="text-sm font-semibold text-amber-100">
+                        Line Busy
+                      </div>
+                      <div className="text-xs text-amber-200 mt-1">
+                        Needs retry
+                      </div>
+                    </div>
+                    {/* Priority indicator */}
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">!</span>
+                    </div>
+                  </motion.div>
+
+                  {/* Completed */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="glass-card-subtle rounded-2xl p-4 border border-emerald-200/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-600" />
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-800 mb-1">
+                      {stats.callStatusBreakdown?.completed || 0}
+                    </div>
+                    <div className="text-sm font-medium text-emerald-700">
+                      Completed
+                    </div>
+                  </motion.div>
+
+                  {/* No Response */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="glass-card-subtle rounded-2xl p-4 border border-slate-200/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Phone className="w-5 h-5 text-slate-600" />
+                      <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-800 mb-1">
+                      {stats.callStatusBreakdown?.no_answer || 0}
+                    </div>
+                    <div className="text-sm font-medium text-slate-700">
+                      No Response
+                    </div>
+                  </motion.div>
+
+                  {/* Follow Up */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="glass-card-subtle rounded-2xl p-4 border border-blue-200/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-800 mb-1">
+                      {stats.callStatusBreakdown?.follow_up || 0}
+                    </div>
+                    <div className="text-sm font-medium text-blue-700">
+                      Follow Up
+                    </div>
+                  </motion.div>
+
+                  {/* Not Interested */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="glass-card-subtle rounded-2xl p-4 border border-purple-200/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <User className="w-5 h-5 text-purple-600" />
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-800 mb-1">
+                      {stats.callStatusBreakdown?.not_interested || 0}
+                    </div>
+                    <div className="text-sm font-medium text-purple-700">
+                      Not Interested
+                    </div>
+                  </motion.div>
+
+                  {/* Invalid */}
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className="glass-card-subtle rounded-2xl p-4 border border-red-200/50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <X className="w-5 h-5 text-red-600" />
+                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                    </div>
+                    <div className="text-xl font-bold text-slate-800 mb-1">
+                      {stats.callStatusBreakdown?.invalid || 0}
+                    </div>
+                    <div className="text-sm font-medium text-red-700">
+                      Invalid
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50">
+                  <div className="text-sm text-slate-600">
+                    <span className="font-medium">Total Calls:</span> {stats.totalCalls || 0}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={refreshStats}
+                      variant="secondary"
+                      size="sm"
+                      className="flex items-center space-x-1"
+                    >
+                      <BarChart3 className="w-3 h-3" />
+                      <span>Refresh</span>
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Main Call Queue */}
+              <Reminders agentPin={agentPin} />
+            </div>
+          )}
           {activeTab === 'calls' && renderTodaysCalls()}
           {activeTab === 'logs' && renderActivityLogs()}
         </motion.div>
@@ -1127,7 +1331,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-slate-600">
-                      {new Date(editingCustomer.created_at).toLocaleDateString()}
+                      {formatDateLocal(editingCustomer.created_at)}
                     </div>
                     <div className="text-sm text-slate-500">Added</div>
                   </div>
@@ -1425,13 +1629,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                             {formatCallStatus(call.call_status)}
                           </span>
                           <span className="text-sm text-slate-500">
-                            {new Date(call.call_date).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
+                            {formatDateTimeLocal(call.call_date)}
                           </span>
                           {index === 0 && (
                             <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
@@ -1455,7 +1653,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                             <span>Outcome Score: {call.outcome_score}/10</span>
                           )}
                           {call.next_call_date && (
-                            <span>Next Follow-up: {new Date(call.next_call_date).toLocaleDateString()}</span>
+                            <span>Next Follow-up: {formatDateLocal(call.next_call_date)}</span>
                           )}
                         </div>
                       </div>

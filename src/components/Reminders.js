@@ -8,6 +8,7 @@ import { useToast } from './Toast';
 import Accordion from './Accordion';
 import SwipeableCard from './SwipeableCard';
 import { Button } from './index';
+import { formatDateLocal } from '../utils';
 
 const Reminders = ({ agentPin }) => {
   const { success, error } = useToast();
@@ -654,7 +655,7 @@ const Reminders = ({ agentPin }) => {
                           <div className="space-y-3">
                             {/* Schedule Information */}
                             <Accordion
-                              title={`${activeTab === 'overdue' ? 'Next follow-up' : activeTab === 'today' ? 'Due today' : 'Scheduled for'}: ${new Date(reminder.next_call_date).toLocaleDateString()}`}
+                              title={`${activeTab === 'overdue' ? 'Next follow-up' : activeTab === 'today' ? 'Due today' : 'Scheduled for'}: ${formatDateLocal(reminder.next_call_date)}`}
                               icon={Calendar}
                               defaultExpanded={false}
                               className="bg-slate-50/50 border-slate-200"
@@ -663,11 +664,11 @@ const Reminders = ({ agentPin }) => {
                               <div className="text-sm text-slate-600 space-y-2">
                                 <div className="flex items-center space-x-2">
                                   <span className="font-medium">Next follow-up:</span>
-                                  <span>{new Date(reminder.next_call_date).toLocaleDateString()}</span>
+                                  <span>{formatDateLocal(reminder.next_call_date)}</span>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Clock className="w-3 h-3 text-slate-400" />
-                                  <span>Last called: {new Date(reminder.call_date).toLocaleDateString()}</span>
+                                  <span>Last called: {formatDateLocal(reminder.call_date)}</span>
                                 </div>
                               </div>
                             </Accordion>
@@ -699,7 +700,7 @@ const Reminders = ({ agentPin }) => {
                                 <div className="text-sm text-slate-600">
                                   <div className="flex items-center space-x-2 mb-2">
                                     <span className="font-medium">Latest call:</span>
-                                    <span>{new Date(reminder.call_date).toLocaleDateString()}</span>
+                                    <span>{formatDateLocal(reminder.call_date)}</span>
                                   </div>
                                   <Button
                                     onClick={() => handleViewTimeline(reminder.fcm_customers)}
@@ -882,7 +883,7 @@ const Reminders = ({ agentPin }) => {
                                 <span className="font-medium text-slate-700">Call Date:</span>
                                 <br />
                                 <span className={isLatest ? 'text-emerald-700 font-semibold' : 'text-slate-600'}>
-                                  {new Date(record.call_date).toLocaleDateString()}
+                                  {formatDateLocal(record.call_date)}
                                 </span>
                               </div>
                               {record.next_call_date && (
@@ -890,7 +891,7 @@ const Reminders = ({ agentPin }) => {
                                   <span className="font-medium text-slate-700">Next Call:</span>
                                   <br />
                                   <span className={isLatest ? 'text-emerald-700 font-semibold' : 'text-slate-600'}>
-                                    {new Date(record.next_call_date).toLocaleDateString()}
+                                    {formatDateLocal(record.next_call_date)}
                                   </span>
                                 </div>
                               )}

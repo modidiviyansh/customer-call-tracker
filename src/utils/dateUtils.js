@@ -29,6 +29,48 @@ export const formatTime = (date, formatString = 'HH:mm') => {
   return formatDate(date, formatString);
 };
 
+export const formatDateLocal = (date) => {
+  try {
+    let dateObj;
+    
+    if (typeof date === 'string') {
+      dateObj = parseISO(date);
+    } else {
+      dateObj = new Date(date);
+    }
+    
+    if (!isValid(dateObj)) {
+      throw new Error('Invalid date');
+    }
+    
+    return format(dateObj, 'dd MMM yy');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
+export const formatDateTimeLocal = (date) => {
+  try {
+    let dateObj;
+    
+    if (typeof date === 'string') {
+      dateObj = parseISO(date);
+    } else {
+      dateObj = new Date(date);
+    }
+    
+    if (!isValid(dateObj)) {
+      throw new Error('Invalid date');
+    }
+    
+    return format(dateObj, 'dd MMM yy HH:mm');
+  } catch (error) {
+    console.error('Error formatting datetime:', error);
+    return 'Invalid date';
+  }
+};
+
 export const getRelativeTime = (date) => {
   try {
     const now = new Date();

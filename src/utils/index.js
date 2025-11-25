@@ -1,5 +1,5 @@
 // Utility functions barrel export
-export { formatDate, formatDateTime, formatTime, getRelativeTime } from './dateUtils';
+export { formatDate, formatDateTime, formatTime, formatDateLocal, formatDateTimeLocal, getRelativeTime } from './dateUtils';
 export { validatePhone, validateEmail, validateIndianMobile, formatIndianMobile, validateIndianPIN, validateRequired, validateMinLength, validateMaxLength } from './validation';
 export {
   validateIndianMobileArray,
