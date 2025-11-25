@@ -1,24 +1,22 @@
 /**
- * MOBILE-OPTIMIZED PAGINATION COMPONENT
+ * MOBILE-FIRST PAGINATION COMPONENT
  * 
  * Features:
- * - Simple prev/next navigation for mobile
- * - "Load More" infinite scroll style button
- * - Touch-friendly controls (44px minimum)
- * - No complex page counts or numbers
- * - Clean, minimal design
- * - Smooth animations
+ * - Compact Previous/Page/Next navigation only
+ * - Centered active page number display
+ * - Text-based buttons optimized for thumb interaction
+ * - Minimal Load More functionality
+ * - Touch-friendly spacing (44px minimum targets)
+ * - Clean, focused mobile design
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, MoreHorizontal, Loader2 } from 'lucide-react';
-import { Button } from './index';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const MobilePagination = ({
   // Server-side data props
   currentPage = 1,
-  pageSize = 20,
   totalCount = 0,
   totalPages = 0,
   
@@ -26,25 +24,14 @@ const MobilePagination = ({
   onPageChange,
   
   // UI customization
-  showLoadMore = true,
-  showPrevNext = true,
-  showInfo = true,
+  showInfo = false, // Disabled by default for clean interface
   className = "",
   loading = false,
   emptyMessage = "No data available",
-  loadMoreText = "Load More",
-  loadMoreLoadingText = "Loading...",
-  
-  // Styling
-  variant = "outline", // "outline" | "filled" | "ghost"
-  size = "lg", // "sm" | "md" | "lg"
   serverName = "Database"
 }) => {
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Calculate derived values
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalCount);
   const hasNextPage = currentPage < totalPages;
   const hasPreviousPage = currentPage > 1;
 
@@ -55,17 +42,6 @@ const MobilePagination = ({
     }
   };
 
-  const handleLoadMore = async () => {
-    if (!hasNextPage || loading) return;
-    
-    setIsLoadingMore(true);
-    try {
-      await handlePageChange(currentPage + 1);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-
   const goToPreviousPage = () => handlePageChange(currentPage - 1);
   const goToNextPage = () => handlePageChange(currentPage + 1);
 
@@ -73,157 +49,103 @@ const MobilePagination = ({
   if (totalCount === 0 && !loading) {
     return (
       <div className={`text-center py-8 ${className}`}>
-        <p className="text-slate-500">{emptyMessage}</p>
+        <p className="text-slate-500 text-sm">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  // Single page state
+  if (totalPages <= 1) {
+    return (
+      <div className={`text-center py-4 ${className}`}>
+        <p className="text-xs text-slate-500">Page 1 of 1</p>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Mobile Info Strip */}
-      {showInfo && totalCount > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center text-sm text-slate-600 bg-slate-50 rounded-lg py-3 px-4"
+    <div className={`py-4 ${className}`}>
+      {/* Compact Mobile Pagination */}
+      <div className="flex items-center justify-center">
+        {/* Previous Button */}
+        <motion.button
+          onClick={goToPreviousPage}
+          disabled={loading || !hasPreviousPage}
+          className={`
+            flex items-center justify-center min-w-[44px] h-11 px-3 rounded-lg
+            text-sm font-medium transition-all duration-200 touch-manipulation
+            ${hasPreviousPage && !loading
+              ? 'text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95'
+              : 'text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed'
+            }
+          `}
+          whileTap={hasPreviousPage && !loading ? { scale: 0.95 } : {}}
         >
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <span>Showing <span className="font-medium">{startIndex + 1}-{endIndex}</span> of <span className="font-medium">{totalCount.toLocaleString()}</span> customers</span>
-          </div>
-          <div className="flex items-center justify-center gap-1 text-xs text-slate-500">
-            <div className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></div>
-            <span>{serverName}</span>
-            {totalPages > 1 && (
-              <span>• Page {currentPage} of {totalPages}</span>
-            )}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Mobile Navigation Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3">
-          {/* Previous Page Button */}
-          {showPrevNext && hasPreviousPage && (
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                onClick={goToPreviousPage}
-                disabled={loading}
-                variant={variant}
-                size={size}
-                className="flex items-center gap-2 min-w-[100px]"
-              >
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ChevronLeft className="w-4 h-4" />
-                )}
-                <span>Previous</span>
-              </Button>
-            </motion.div>
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">Prev</span>
+            </>
           )}
+        </motion.button>
 
-          {/* Load More Button (Primary Action) */}
-          {showLoadMore && hasNextPage && (
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex-1 max-w-[200px]"
-            >
-              <Button
-                onClick={handleLoadMore}
-                disabled={loading || isLoadingMore}
-                variant="filled"
-                size={size}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-              >
-                {(loading || isLoadingMore) ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{loadMoreLoadingText}</span>
-                  </>
-                ) : (
-                  <>
-                    <MoreHorizontal className="w-4 h-4" />
-                    <span>{loadMoreText}</span>
-                  </>
-                )}
-              </Button>
-            </motion.div>
-          )}
-
-          {/* Next Page Button */}
-          {showPrevNext && hasNextPage && (
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button
-                onClick={goToNextPage}
-                disabled={loading}
-                variant={variant}
-                size={size}
-                className="flex items-center gap-2 min-w-[100px]"
-              >
-                <span>Next</span>
-                {loading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </Button>
-            </motion.div>
-          )}
+        {/* Centered Page Number */}
+        <div className="mx-4 flex items-center">
+          <motion.div
+            className="flex items-center justify-center min-w-[60px] h-11 px-3 bg-blue-500 text-white rounded-lg"
+            whileHover={{ scale: 1.02 }}
+          >
+            <span className="text-sm font-semibold">
+              {currentPage} / {totalPages}
+            </span>
+          </motion.div>
         </div>
-      )}
 
-      {/* Single Page or End State */}
-      {totalPages <= 1 && totalCount > 0 && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center py-4"
+        {/* Next Button */}
+        <motion.button
+          onClick={goToNextPage}
+          disabled={loading || !hasNextPage}
+          className={`
+            flex items-center justify-center min-w-[44px] h-11 px-3 rounded-lg
+            text-sm font-medium transition-all duration-200 touch-manipulation
+            ${hasNextPage && !loading
+              ? 'text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 active:scale-95'
+              : 'text-slate-400 bg-slate-100 border border-slate-200 cursor-not-allowed'
+            }
+          `}
+          whileTap={hasNextPage && !loading ? { scale: 0.95 } : {}}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm font-medium">All customers loaded</span>
-          </div>
-        </motion.div>
-      )}
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </>
+          )}
+        </motion.button>
+      </div>
+
+
 
       {/* Loading State */}
       <AnimatePresence>
         {loading && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="text-center py-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="text-center mt-4"
           >
-            <div className="inline-flex items-center gap-2 text-slate-600">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Loading {serverName} data...</span>
+            <div className="inline-flex items-center gap-2 text-slate-500 text-xs">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Loading...</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* End of Results Message */}
-      {!hasNextPage && totalCount > pageSize && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-4"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg">
-            <MoreHorizontal className="w-4 h-4" />
-            <span className="text-sm">You've reached the end</span>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
