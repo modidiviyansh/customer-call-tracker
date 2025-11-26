@@ -7,7 +7,7 @@ import CSVImport from './CSVImport';
 import { useToast } from './Toast';
 import Accordion from './Accordion';
 
-import { Button } from './index';
+
 import { formatDateLocal } from '../utils';
 
 const Reminders = ({ agentPin }) => {
@@ -584,7 +584,6 @@ const Reminders = ({ agentPin }) => {
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
               {getFilteredReminders().map((reminder, index) => {
-                const StatusIcon = getStatusIcon(reminder.call_status);
                 return (
                   <motion.div
                     key={reminder.id}
