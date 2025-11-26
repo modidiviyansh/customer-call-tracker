@@ -6,7 +6,7 @@ import CallDisposition from './CallDisposition';
 import CSVImport from './CSVImport';
 import { useToast } from './Toast';
 import Accordion from './Accordion';
-import SwipeableCard from './SwipeableCard';
+
 import { Button } from './index';
 import { formatDateLocal } from '../utils';
 
@@ -586,182 +586,248 @@ const Reminders = ({ agentPin }) => {
               {getFilteredReminders().map((reminder, index) => {
                 const StatusIcon = getStatusIcon(reminder.call_status);
                 return (
-                  <div key={reminder.id} className="space-y-2">
-                    {/* Disposition Tag Above Card */}
-                    <div className="flex items-center space-x-3 px-2">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
-                        className="flex items-center space-x-2"
-                      >
-                        <StatusIcon className="w-4 h-4 text-slate-600" />
-                        <span className={`
-                          px-4 py-2 rounded-full text-sm font-bold border-2 shadow-lg flex-shrink-0
-                          ${getStatusColor(reminder.call_status)}
-                        `}>
-                          {formatStatus(reminder.call_status)}
-                        </span>
-                      </motion.div>
-                    </div>
-                    
-                    <SwipeableCard
-                      onSwipeLeft={() => {
-                        console.log('📝 Swipe left - Log Call for:', reminder.fcm_customers?.name);
-                        setSelectedCustomer(reminder.fcm_customers);
-                        setShowDisposition(true);
-                      }}
-                      onSwipeRight={() => {
-                        console.log('📞 Swipe right - Call Now for:', reminder.fcm_customers?.name);
-                        handleCallCustomer(reminder.fcm_customers);
-                      }}
-                      leftAction={{
-                        icon: Phone,
-                        label: 'Log Call',
-                        color: 'from-emerald-500 to-emerald-600'
-                      }}
-                      rightAction={{
-                        icon: PhoneCall,
-                        label: 'Call Now',
-                        color: 'from-blue-500 to-blue-600'
-                      }}
-                      className="w-full"
-                    >
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.4, ease: "easeOut" }}
-                        className="w-full bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/30 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
-                      >
-                      <div className="flex items-start justify-between gap-6">
-                        {/* Left Content Stack */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-3 mb-4">
-                            <h3 className="text-lg font-semibold text-slate-800 truncate">
+                  <motion.div
+                    key={reminder.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
+                    className="w-full"
+                  >
+                    {/* Card Design Matching Customer Cards */}
+                    <div className={`
+                      w-full bg-white rounded-2xl shadow-lg border border-white/20 
+                      overflow-hidden mb-4
+                    `}
+                    style={{
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                      fontFamily: 'Helvetica, Arial, sans-serif'
+                    }}>
+                      {/* Header Section - Contact Name & Status */}
+                      <div className="px-5 py-4 bg-gradient-to-r from-slate-50 to-white">
+                        <div className="flex items-start justify-between mb-2">
+                          {/* Contact Name - Bold, Helvetica, max 2 lines */}
+                          <div className="flex-1 mr-3">
+                            <h3 
+                              className="text-slate-800 font-bold leading-tight"
+                              style={{ 
+                                fontSize: '15px', 
+                                fontWeight: '700',
+                                lineHeight: '1.3',
+                                maxHeight: '2.6em',
+                                overflow: 'hidden',
+                                fontFamily: 'Helvetica, Arial, sans-serif'
+                              }}
+                              title={reminder.fcm_customers?.name}
+                            >
                               {reminder.fcm_customers?.name}
                             </h3>
                           </div>
-
-                          {/* Essential Info - Always Visible */}
-                          <div className="flex items-center space-x-2 text-base text-slate-600 mb-3">
-                            <Phone className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                            <span className="truncate">{reminder.fcm_customers?.mobile1 || 'No phone'}</span>
-                            {reminder.fcm_customers?.mobile2 && (
-                              <span className="text-sm text-slate-400">• {reminder.fcm_customers.mobile2}</span>
-                            )}
-                          </div>
-
-                          {/* Collapsible Details */}
-                          <div className="space-y-3">
-                            {/* Schedule Information */}
-                            <Accordion
-                              title={`${activeTab === 'overdue' ? 'Next follow-up' : activeTab === 'today' ? 'Due today' : 'Scheduled for'}: ${formatDateLocal(reminder.next_call_date)}`}
-                              icon={Calendar}
-                              defaultExpanded={false}
-                              className="bg-slate-50/50 border-slate-200"
-                              titleClassName="hover:bg-slate-100"
-                            >
-                              <div className="text-sm text-slate-600 space-y-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-medium">Next follow-up:</span>
-                                  <span>{formatDateLocal(reminder.next_call_date)}</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  <span>Last called: {formatDateLocal(reminder.call_date)}</span>
-                                </div>
-                              </div>
-                            </Accordion>
-
-                            {/* Notes Section */}
-                            {reminder.remarks && (
-                              <Accordion
-                                title="Latest Notes"
-                                icon={AlertCircle}
-                                defaultExpanded={false}
-                                className="bg-blue-50/50 border-blue-200"
-                                titleClassName="hover:bg-blue-100"
-                              >
-                                <div className="text-sm text-slate-700">
-                                  <p className="leading-relaxed">{reminder.remarks}</p>
-                                </div>
-                              </Accordion>
-                            )}
-
-                            {/* Call History */}
-                            <Accordion
-                              title="View Call History"
-                              icon={History}
-                              defaultExpanded={false}
-                              className="bg-green-50/50 border-green-200"
-                              titleClassName="hover:bg-green-100"
-                            >
-                              <div className="space-y-3">
-                                <div className="text-sm text-slate-600">
-                                  <div className="flex items-center space-x-2 mb-2">
-                                    <span className="font-medium">Latest call:</span>
-                                    <span>{formatDateLocal(reminder.call_date)}</span>
-                                  </div>
-                                  <Button
-                                    onClick={() => handleViewTimeline(reminder.fcm_customers)}
-                                    variant="secondary"
-                                    size="sm"
-                                    className="w-full flex items-center justify-center space-x-2"
-                                  >
-                                    <History className="w-4 h-4" />
-                                    <span>View Full History</span>
-                                  </Button>
-                                </div>
-                              </div>
-                            </Accordion>
-                          </div>
+                          
+                          {/* Status Pill - Top Right */}
+                          <motion.span
+                            className={`
+                              px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm flex-shrink-0
+                              ${getStatusColor(reminder.call_status)}
+                            `}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                          >
+                            {formatStatus(reminder.call_status)}
+                          </motion.span>
+                        </div>
+                        
+                        {/* Scheduled For Metadata - Single line, left-aligned */}
+                        <div className="text-xs text-slate-500 flex items-center space-x-1">
+                          <Calendar className="w-3 h-3 text-slate-400" />
+                          <span>
+                            Scheduled For: {formatDateLocal(reminder.next_call_date)}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Right Action Buttons */}
-                      <div className="flex flex-col space-y-3 flex-shrink-0">
-                        {/* Call Now Button */}
-                        <button
-                          onClick={() => {
-                            console.log('🔄 Call Now clicked for:', reminder.fcm_customers?.name);
-                            handleCallCustomer(reminder.fcm_customers);
-                          }}
-                          className="bg-gradient-to-r from-blue-800 to-blue-700 text-white rounded-xl px-4 py-3 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
-                          style={{ pointerEvents: 'auto' }}
-                        >
-                          <PhoneCall className="w-4 h-4" />
-                          <span>Call Now</span>
-                        </button>
+                      {/* Mobile Numbers Section - Horizontal Pills Only */}
+                      <div className="px-5 pb-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Primary Mobile Number - Blue Pill */}
+                          <motion.button
+                            onClick={() => {
+                              console.log('📞 Calling primary:', reminder.fcm_customers?.mobile1);
+                              handleCallCustomer(reminder.fcm_customers);
+                            }}
+                            className="
+                              bg-gradient-to-r from-blue-500 to-blue-600 text-white 
+                              px-4 py-2.5 rounded-full text-sm font-medium
+                              min-h-[40px] flex items-center gap-2
+                              active:scale-95 transition-transform duration-200
+                              shadow-sm hover:shadow-md
+                            "
+                            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <PhoneCall className="w-4 h-4" />
+                            <span>{reminder.fcm_customers?.mobile1}</span>
+                          </motion.button>
 
-                        {/* Log Call Button */}
-                        <button
-                          onClick={() => {
-                            console.log('📝 Log Call clicked for:', reminder.fcm_customers?.name);
-                            setSelectedCustomer(reminder.fcm_customers);
-                            setShowDisposition(true);
-                          }}
-                          className="bg-gradient-to-r from-emerald-700 to-emerald-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
-                          style={{ pointerEvents: 'auto' }}
-                        >
-                          <Phone className="w-4 h-4" />
-                          <span>Log Call</span>
-                        </button>
+                          {/* Secondary Mobile Numbers - Grey Pills with "Sec" Label */}
+                          {reminder.fcm_customers?.mobile2 && (
+                            <motion.button
+                              onClick={() => {
+                                const customerWithNumber = { ...reminder.fcm_customers, mobile1: reminder.fcm_customers.mobile2 };
+                                console.log('📞 Calling secondary:', reminder.fcm_customers.mobile2);
+                                handleCallCustomer(customerWithNumber);
+                              }}
+                              className="
+                                bg-slate-200 text-slate-700 px-3 py-2.5 rounded-full text-sm font-medium
+                                min-h-[40px] flex items-center gap-2
+                                active:scale-95 transition-transform duration-200
+                                hover:bg-slate-300 hover:text-slate-800
+                              "
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <span>{reminder.fcm_customers.mobile2}</span>
+                              <span className="text-xs text-slate-500 bg-slate-300 px-2 py-0.5 rounded-full">
+                                Sec
+                              </span>
+                            </motion.button>
+                          )}
 
-                        <button
-                          onClick={() => {
-                            console.log('📅 Timeline view clicked for:', reminder.fcm_customers?.name);
-                            handleViewTimeline(reminder.fcm_customers);
-                          }}
-                          className="bg-gradient-to-r from-slate-700 to-slate-600 text-white rounded-xl px-4 py-3 shadow-lg shadow-slate-500/25 hover:shadow-xl hover:shadow-slate-500/30 transition-all duration-300 text-sm font-semibold flex items-center space-x-2 min-h-[48px] sm:min-h-[56px] w-28 justify-center touch-manipulation relative z-20 active:scale-95"
-                          style={{ pointerEvents: 'auto' }}
-                        >
-                          <History className="w-4 h-4" />
-                          <span>History</span>
-                        </button>
+                          {reminder.fcm_customers?.mobile3 && (
+                            <motion.button
+                              onClick={() => {
+                                const customerWithNumber = { ...reminder.fcm_customers, mobile1: reminder.fcm_customers.mobile3 };
+                                console.log('📞 Calling tertiary:', reminder.fcm_customers.mobile3);
+                                handleCallCustomer(customerWithNumber);
+                              }}
+                              className="
+                                bg-slate-200 text-slate-700 px-3 py-2.5 rounded-full text-sm font-medium
+                                min-h-[40px] flex items-center gap-2
+                                active:scale-95 transition-transform duration-200
+                                hover:bg-slate-300 hover:text-slate-800
+                              "
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <span>{reminder.fcm_customers.mobile3}</span>
+                              <span className="text-xs text-slate-500 bg-slate-300 px-2 py-0.5 rounded-full">
+                                Sec
+                              </span>
+                            </motion.button>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Action Buttons Row - Log Call (Left) + Icon Buttons (Right) */}
+                      <div className="px-5 pb-4">
+                        <div className="flex items-center justify-between">
+                          {/* Log Call Button - Left Placement */}
+                          <motion.button
+                            onClick={() => {
+                              console.log('📝 Log call for:', reminder.fcm_customers?.name);
+                              setSelectedCustomer(reminder.fcm_customers);
+                              setShowDisposition(true);
+                            }}
+                            className="
+                              bg-gradient-to-r from-emerald-500 to-emerald-600 text-white 
+                              px-5 py-3 rounded-xl font-medium text-sm
+                              min-h-[44px] flex items-center justify-center gap-2
+                              active:scale-95 transition-transform duration-200
+                              shadow-sm hover:shadow-md
+                            "
+                            style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Phone className="w-4 h-4" />
+                            <span>Log Call</span>
+                          </motion.button>
+
+                          {/* Icon Buttons - Right Side */}
+                          <div className="flex items-center gap-2">
+                            {/* Call History Button */}
+                            <motion.button
+                              onClick={() => {
+                                console.log('📋 View history for:', reminder.fcm_customers?.name);
+                                handleViewTimeline(reminder.fcm_customers);
+                              }}
+                              className="
+                                bg-slate-100 text-slate-600 
+                                px-3 py-3 rounded-xl
+                                min-h-[44px] min-w-[44px] flex items-center justify-center
+                                active:scale-95 transition-transform duration-200
+                                hover:bg-slate-200 hover:text-slate-700
+                              "
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                              whileTap={{ scale: 0.95 }}
+                              title="Call History"
+                            >
+                              <History className="w-4 h-4" />
+                            </motion.button>
+
+                            {/* Profile Button */}
+                            <motion.button
+                              onClick={() => {
+                                console.log('👤 View profile for:', reminder.fcm_customers?.name);
+                                // This would need to be implemented in the parent component
+                                // For now, we'll use the same function as the Customer Tab
+                                if (window.handleViewProfile) {
+                                  window.handleViewProfile(reminder.fcm_customers);
+                                }
+                              }}
+                              className="
+                                bg-slate-100 text-slate-600 
+                                px-3 py-3 rounded-xl
+                                min-h-[44px] min-w-[44px] flex items-center justify-center
+                                active:scale-95 transition-transform duration-200
+                                hover:bg-slate-200 hover:text-slate-700
+                              "
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                              whileTap={{ scale: 0.95 }}
+                              title="Profile"
+                            >
+                              <User className="w-4 h-4" />
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Latest Notes Section - Full Width Collapsible */}
+                      {reminder.remarks && (
+                        <div className="px-5 pb-4">
+                          <Accordion
+                            title="Latest Notes"
+                            icon={AlertCircle}
+                            defaultExpanded={false}
+                            className="bg-blue-50/50 border-blue-200"
+                            titleClassName="hover:bg-blue-100"
+                          >
+                            <div className="text-sm text-slate-700 bg-white rounded-lg p-4">
+                              <p className="leading-relaxed">{reminder.remarks}</p>
+                            </div>
+                          </Accordion>
+                        </div>
+                      )}
+
+                      {/* Additional Follow-up Info Pill Row (if needed) */}
+                      {reminder.call_date && (
+                        <div className="px-5 pb-4">
+                          <div className="flex items-center gap-2">
+                            <motion.div
+                              className="
+                                bg-slate-100 text-slate-600 px-3 py-2 rounded-full text-xs font-medium
+                                min-h-[32px] flex items-center gap-2
+                              "
+                              style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                            >
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              <span>Last called: {formatDateLocal(reminder.call_date)}</span>
+                            </motion.div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                      </motion.div>
-                    </SwipeableCard>
-                </div>
+                  </motion.div>
                 );
               })}
             </motion.div>

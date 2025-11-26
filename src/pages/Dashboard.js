@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle, Trash2 } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
 import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, SwipeableCard, SwipeableMobileCallCard } from '../components';
@@ -761,64 +761,235 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           <p className="text-base text-slate-500">Start calling customers to build your activity.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-y-4">
+        <div className="space-y-4">
           {callRecords.map((record, index) => (
-            <div key={record.id} className="space-y-2">
-              {/* Disposition Tag Above Card */}
-              <div className="flex items-center space-x-3 px-2">
-                <motion.span
-                  className={`
-                    px-4 py-2 rounded-full text-sm font-bold border-2 shadow-lg flex-shrink-0
-                    ${getStatusColor(record.call_status)}
-                  `}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
-                >
-                  {formatCallStatus(record.call_status)}
-                </motion.span>
-              </div>
-              
-              <SwipeableCard
-                onSwipeLeft={() => {
-                  console.log('📝 Swipe left - Log Call for:', record.fcm_customers?.name);
-                  // For call records, this could open a form to edit the call log
-                  handleDispositionCustomer(record.fcm_customers);
-                }}
-                onSwipeRight={() => {
-                  console.log('📞 Swipe right - Call Again for:', record.fcm_customers?.name);
-                  handleCallCustomer(record.fcm_customers);
-                }}
-                leftAction={{
-                  icon: Phone,
-                  label: 'Log Call',
-                  color: 'from-emerald-500 to-emerald-600'
-                }}
-                rightAction={{
-                  icon: PhoneCall,
-                  label: 'Call Again',
-                  color: 'from-blue-500 to-blue-600'
-                }}
-                className="w-full"
-              >
-                <div className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <h3 className="text-lg font-semibold text-slate-800">
+            <motion.div
+              key={record.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
+              className="w-full"
+            >
+              {/* Card Design Matching Customer Cards */}
+              <div className={`
+                w-full bg-white rounded-2xl shadow-lg border border-white/20 
+                overflow-hidden mb-4
+              `}
+              style={{
+                borderRadius: '16px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                fontFamily: 'Helvetica, Arial, sans-serif'
+              }}>
+                {/* Header Section - Contact Name & Status */}
+                <div className="px-5 py-4 bg-gradient-to-r from-slate-50 to-white">
+                  <div className="flex items-start justify-between mb-2">
+                    {/* Contact Name - Bold, Helvetica, max 2 lines */}
+                    <div className="flex-1 mr-3">
+                      <h3 
+                        className="text-slate-800 font-bold leading-tight"
+                        style={{ 
+                          fontSize: '15px', 
+                          fontWeight: '700',
+                          lineHeight: '1.3',
+                          maxHeight: '2.6em',
+                          overflow: 'hidden',
+                          fontFamily: 'Helvetica, Arial, sans-serif'
+                        }}
+                        title={record.fcm_customers?.name}
+                      >
                         {record.fcm_customers?.name}
                       </h3>
                     </div>
+                    
+                    {/* Status Pill - Top Right */}
+                    <motion.span
+                      className={`
+                        px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm flex-shrink-0
+                        ${getStatusColor(record.call_status)}
+                      `}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                    >
+                      {formatCallStatus(record.call_status)}
+                    </motion.span>
+                  </div>
+                  
+                  {/* Call Time Metadata - Subtle, left-aligned */}
+                  <div className="text-xs text-slate-500 flex items-center space-x-1">
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    <span>Call time: {formatDateTimeLocal(record.call_date).split(' ')[1]}</span>
+                  </div>
+                </div>
 
-                    {/* Essential Info - Always Visible */}
-                    <div className="text-sm text-slate-600 mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span>Call time: {formatDateTimeLocal(record.call_date).split(' ')[1]}</span>
-                      </div>
+                {/* Mobile Numbers Section - Prominent Pill Buttons */}
+                <div className="px-5 pb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Primary Mobile Number */}
+                    <motion.button
+                      onClick={() => {
+                        const customerWithNumber = { 
+                          ...record.fcm_customers, 
+                          mobile1: record.called_mobile_number || record.fcm_customers?.mobile1 
+                        };
+                        console.log('📞 Calling:', customerWithNumber.mobile1);
+                        handleCallCustomer(customerWithNumber);
+                      }}
+                      className="
+                        bg-gradient-to-r from-blue-500 to-blue-600 text-white 
+                        px-4 py-2.5 rounded-full text-sm font-medium
+                        min-h-[40px] flex items-center gap-2
+                        active:scale-95 transition-transform duration-200
+                        shadow-sm hover:shadow-md
+                      "
+                      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                      <span>{record.called_mobile_number || record.fcm_customers?.mobile1}</span>
+                    </motion.button>
+
+                    {/* Secondary Mobile Number */}
+                    {record.fcm_customers?.mobile2 && record.fcm_customers?.mobile2 !== record.called_mobile_number && (
+                      <motion.button
+                        onClick={() => {
+                          const customerWithNumber = { ...record.fcm_customers, mobile1: record.fcm_customers.mobile2 };
+                          console.log('📞 Calling secondary:', record.fcm_customers.mobile2);
+                          handleCallCustomer(customerWithNumber);
+                        }}
+                        className="
+                          bg-slate-100 text-slate-700 px-3 py-2.5 rounded-full text-sm font-medium
+                          min-h-[40px] flex items-center gap-2
+                          active:scale-95 transition-transform duration-200
+                          hover:bg-slate-200
+                        "
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span>{record.fcm_customers.mobile2}</span>
+                        <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                          Secondary
+                        </span>
+                      </motion.button>
+                    )}
+
+                    {/* Tertiary Mobile Number */}
+                    {record.fcm_customers?.mobile3 && (
+                      <motion.button
+                        onClick={() => {
+                          const customerWithNumber = { ...record.fcm_customers, mobile1: record.fcm_customers.mobile3 };
+                          console.log('📞 Calling tertiary:', record.fcm_customers.mobile3);
+                          handleCallCustomer(customerWithNumber);
+                        }}
+                        className="
+                          bg-slate-100 text-slate-700 px-3 py-2.5 rounded-full text-sm font-medium
+                          min-h-[40px] flex items-center gap-2
+                          active:scale-95 transition-transform duration-200
+                          hover:bg-slate-200
+                        "
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <span>{record.fcm_customers.mobile3}</span>
+                        <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                          Tertiary
+                        </span>
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons Row - Spaced Evenly */}
+                <div className="px-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    {/* Log Call Button - Green, Bold, Prominent, Right */}
+                    <motion.button
+                      onClick={() => {
+                        console.log('📝 Log call for:', record.fcm_customers?.name);
+                        handleDispositionCustomer(record.fcm_customers);
+                      }}
+                      className="
+                        bg-gradient-to-r from-emerald-600 to-emerald-700 text-white 
+                        px-5 py-3 rounded-xl font-bold text-sm
+                        min-h-[44px] flex items-center justify-center gap-2
+                        active:scale-95 transition-transform duration-200
+                        shadow-md hover:shadow-lg
+                      "
+                      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Phone className="w-4 h-4" />
+                      <span>Log Call</span>
+                    </motion.button>
+
+                    {/* Compact Action Buttons - Center */}
+                    <div className="flex items-center gap-2">
+                      {/* View Profile Button - Icon Only, Moderate Opacity */}
+                      <motion.button
+                        onClick={() => {
+                          console.log('👤 View profile for:', record.fcm_customers?.name);
+                          handleViewProfile(record.fcm_customers);
+                        }}
+                        className="
+                          bg-slate-200 text-slate-500 
+                          px-3 py-3 rounded-xl
+                          min-h-[44px] min-w-[44px] flex items-center justify-center
+                          active:scale-95 transition-transform duration-200
+                          hover:bg-slate-300 hover:text-slate-600
+                        "
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        whileTap={{ scale: 0.95 }}
+                        title="View Profile"
+                      >
+                        <User className="w-4 h-4" />
+                      </motion.button>
+
+                      {/* View History Button - Icon Only, Moderate Opacity */}
+                      <motion.button
+                        onClick={() => {
+                          console.log('📋 View history for:', record.fcm_customers?.name);
+                          handleViewCallHistory(record.fcm_customers);
+                        }}
+                        className="
+                          bg-slate-200 text-slate-500 
+                          px-3 py-3 rounded-xl
+                          min-h-[44px] min-w-[44px] flex items-center justify-center
+                          active:scale-95 transition-transform duration-200
+                          hover:bg-slate-300 hover:text-slate-600
+                        "
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        whileTap={{ scale: 0.95 }}
+                        title="View History"
+                      >
+                        <History className="w-4 h-4" />
+                      </motion.button>
+
+                      {/* Delete Button - Red, Far Right for Safety */}
+                      <motion.button
+                        onClick={() => {
+                          console.log('🗑️ Delete customer:', record.fcm_customers?.id);
+                          handleDeleteCustomer(record.fcm_customers?.id);
+                        }}
+                        className="
+                          bg-red-50 text-red-500 
+                          px-3 py-3 rounded-xl
+                          min-h-[44px] min-w-[44px] flex items-center justify-center
+                          active:scale-95 transition-transform duration-200
+                          hover:bg-red-100 hover:text-red-600
+                        "
+                        style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+                        whileTap={{ scale: 0.95 }}
+                        title="Delete Customer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </motion.button>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Collapsible Details */}
+                {/* Collapsible Details Section */}
+                {(record.remarks || record.next_call_date) && (
+                  <div className="px-5 pb-4">
                     <div className="space-y-3">
                       {/* Notes Section */}
                       {record.remarks && (
@@ -853,32 +1024,10 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         </Accordion>
                       )}
                     </div>
-                </div>
-
-                <div className="flex justify-end mt-4">
-                  <Button
-                    onClick={() => {
-                      console.log('🔄 Call Again clicked for:', record.fcm_customers?.name);
-                      handleCallCustomer(record.fcm_customers);
-                    }}
-                    variant="call"
-                    size="lg"
-                    className="flex items-center space-x-3 relative z-20"
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <PhoneCall className="w-5 h-5" />
-                    </motion.div>
-                    <span>Call Again</span>
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
-              </div>
-              </SwipeableCard>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
