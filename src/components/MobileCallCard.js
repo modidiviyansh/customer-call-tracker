@@ -35,7 +35,7 @@ const MobileCallCard = ({
 
   // Truncate name for display (only if >30 characters)
   const truncateName = (name) => {
-    return name.length > 30 ? name.substring(0, 30) + '...' : name;
+    return name.length > 40 ? name.substring(0, 40) + '...' : name;
   };
 
   // Handle number selection for calling
