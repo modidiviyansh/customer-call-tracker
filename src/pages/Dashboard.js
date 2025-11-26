@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle, Trash2 } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, SwipeableCard, SwipeableMobileCallCard } from '../components';
+import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, MobileCallCard } from '../components';
 import { validateIndianPIN, formatDateLocal, formatDateTimeLocal } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -435,7 +435,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
               >
-                <SwipeableMobileCallCard
+                <MobileCallCard
                   customer={customer}
                   onCallCustomer={(customerWithNumber) => {
                     console.log('📞 Call initiated for:', customerWithNumber.name);

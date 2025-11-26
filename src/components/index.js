@@ -16,6 +16,4 @@ export { default as Toast, ToastContainer, useToast } from './Toast';
 export { default as MobileNumberManager } from './MobileNumberManager';
 export { default as CallNowDropdown } from './CallNowDropdown';
 export { default as Accordion } from './Accordion';
-export { default as SwipeableCard } from './SwipeableCard';
 export { default as MobileCallCard } from './MobileCallCard';
-export { default as SwipeableMobileCallCard } from './SwipeableMobileCallCard';
