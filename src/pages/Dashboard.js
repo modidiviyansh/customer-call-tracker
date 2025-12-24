@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Shield, Users, Phone, Clock, UserCheck, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle, Trash2 } from 'lucide-react';
+import { LogOut, Shield, Users, Phone, Clock, BarChart3, Calendar, Search, Plus, Edit, X, PhoneCall, User, History, Upload, CheckCircle, Trash2 } from 'lucide-react';
 import { usePaginatedCustomers, useCallRecords, useDashboardStats } from '../hooks';
 import { usePinAuth } from '../hooks/usePinAuth';
-import { Reminders, CallDisposition, EnhancedCSVImport, SkeletonLoader, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, MobileCallCard } from '../components';
+import { Reminders, CallDisposition, EnhancedCSVImport, ToastContainer, useToast, ServerPagination, MobilePagination, MobileNumberManager, Button, Accordion, MobileCallCard } from '../components';
 import { validateIndianPIN, formatDateLocal, formatDateTimeLocal } from '../utils';
 
 const Dashboard = ({ agentPin, onSignOut }) => {
@@ -27,12 +27,12 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const [formErrors, setFormErrors] = useState({});
 
   const { isAuthenticated } = usePinAuth();
-  const { stats, loading: statsLoading, refreshStats } = useDashboardStats(agentPin);
-  const { 
-    customers, 
-    loading: customersLoading, 
-    searchQuery, 
-    handleSearch, 
+  const { refreshStats } = useDashboardStats(agentPin);
+  const {
+    customers,
+    loading: customersLoading,
+    searchQuery,
+    handleSearch,
     totalCount,
     totalPages,
     currentPage,
@@ -40,12 +40,165 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     goToPage,
     changePageSize,
     refresh,
-    createCustomer, 
-    updateCustomer, 
-    deleteCustomer 
+    createCustomer,
+    updateCustomer,
+    deleteCustomer
   } = usePaginatedCustomers();
   const { callRecords, fetchCallRecords } = useCallRecords();
   const { toasts, success, removeToast } = useToast();
+
+  // Time filter state for analytics
+  const [timeFilter, setTimeFilter] = useState('Today');
+  const [customDateRange, setCustomDateRange] = useState({
+    start: null,
+    end: null
+  });
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  // Memoized filtered data based on time filter
+  const filteredData = useMemo(() => {
+    if (!callRecords || callRecords.length === 0) return [];
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayEnd = new Date(yesterdayStart);
+    yesterdayEnd.setDate(yesterdayEnd.getDate() + 1);
+
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(now.getMonth() - 1);
+
+    // Apply custom date range if set
+    const startDate = customDateRange.start ? new Date(customDateRange.start) : null;
+    const endDate = customDateRange.end ? new Date(customDateRange.end) : null;
+
+    return callRecords.filter(record => {
+      if (!record.call_date) return false;
+      const callDate = new Date(record.call_date);
+
+      // If custom range is active, use it
+      if (startDate && endDate) {
+        return callDate >= startDate && callDate <= endDate;
+      }
+
+      switch (timeFilter) {
+        case 'Today':
+          return callDate >= todayStart && callDate <= now;
+        case 'Yesterday':
+          return callDate >= yesterdayStart && callDate < yesterdayEnd;
+        case 'Past Week':
+          return callDate >= oneWeekAgo && callDate <= now;
+        case 'Past Month':
+          return callDate >= oneMonthAgo && callDate <= now;
+        case 'Lifetime':
+          return true;
+        default:
+          return true;
+      }
+    });
+  }, [callRecords, timeFilter, customDateRange]);
+
+  // Handle quick filter selection
+  const handleQuickFilter = (filter) => {
+    setTimeFilter(filter);
+    setCustomDateRange({ start: null, end: null });
+    setShowCalendar(false);
+  };
+
+  // Clear date range
+  const clearDateRange = () => {
+    setCustomDateRange({ start: null, end: null });
+    setShowCalendar(false);
+  };
+
+  // Dynamic count calculations from filtered data
+  const callCounts = useMemo(() => {
+    const counts = {
+      total: filteredData.length,
+      completed: 0,
+      busy: 0,
+      no_answer: 0,
+      follow_up: 0,
+      not_interested: 0,
+      invalid: 0
+    };
+
+    filteredData.forEach(record => {
+      switch (record.call_status) {
+        case 'completed':
+          counts.completed++;
+          break;
+        case 'busy':
+          counts.busy++;
+          break;
+        case 'no_answer':
+          counts.no_answer++;
+          break;
+        case 'follow_up':
+          counts.follow_up++;
+          break;
+        case 'not_interested':
+          counts.not_interested++;
+          break;
+        case 'invalid':
+          counts.invalid++;
+          break;
+        default:
+          break;
+      }
+    });
+
+    return counts;
+  }, [filteredData]);
+
+  // Separate calculation for action-oriented metrics (overdue, today, and pending calls)
+  const actionCounts = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Step 1: Sort by next_call_date ascending, filter out records without next_call_date
+    const sortedRecords = callRecords
+      .filter(record => record.next_call_date)
+      .sort((a, b) => new Date(a.next_call_date) - new Date(b.next_call_date));
+
+    // Step 2: Apply limit of 1 per customer to prevent over-representation
+    const customerMap = new Map();
+    sortedRecords.forEach(record => {
+      const customerId = record.customer_id;
+      if (!customerMap.has(customerId)) {
+        customerMap.set(customerId, record);
+      }
+      // Keep only the earliest next_call_date per customer
+    });
+
+    const limitedRecords = Array.from(customerMap.values());
+
+    // Step 3: Partition into categories
+    const counts = {
+      overdue: 0,
+      todayCalls: 0,
+      pending: 0
+    };
+
+    limitedRecords.forEach(record => {
+      const nextCallDate = new Date(record.next_call_date);
+      nextCallDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+      if (nextCallDate < today) {
+        counts.overdue++;
+      } else if (nextCallDate.getTime() === today.getTime()) {
+        counts.todayCalls++;
+      } else {
+        counts.pending++;
+      }
+    });
+
+    return counts;
+  }, [callRecords]);
 
   console.log('Dashboard render - agentPin:', agentPin, 'isAuthenticated:', isAuthenticated);
 
@@ -56,9 +209,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       // Set agent PIN in localStorage for component use
       localStorage.setItem('agent_pin', agentPin);
 
-      // Load all data
-      // For today's calls, show only the latest record per customer
-      fetchCallRecords({ agent_pin: agentPin, today: true, latest_only: true });
+      // Load all data - fetch ALL call records for analytics filtering
+      fetchCallRecords({ agent_pin: agentPin });
       refreshStats();
     } else {
       console.log('Dashboard useEffect - conditions not met:', { isAuthenticated, agentPin });
@@ -81,8 +233,8 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     setShowDisposition(false);
     setSelectedCustomer(null);
     refreshStats();
-    // For today's calls, show only the latest record per customer
-    fetchCallRecords({ agent_pin: agentPin, today: true, latest_only: true });
+    // Refresh all call records for analytics filtering
+    fetchCallRecords({ agent_pin: agentPin });
   };
 
   const handleCallCustomer = (customer) => {
@@ -157,17 +309,17 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     if (importType === 'customers') {
       // Import customers in batches to handle 1000+ entries
       const result = await importCustomersInBatches(importData);
-      
+
       // Return proper result structure for EnhancedCSVImport tracking
       if (result.error) {
-        return { 
-          data: null, 
-          error: { message: result.error.message || result.error.toString() } 
+        return {
+          data: null,
+          error: { message: result.error.message || result.error.toString() }
         };
       } else {
-        return { 
-          data: result.data, 
-          error: null 
+        return {
+          data: result.data,
+          error: null
         };
       }
     } else {
@@ -180,10 +332,10 @@ const Dashboard = ({ agentPin, onSignOut }) => {
   const importCustomersInBatches = async (customers) => {
     // EnhancedCSVImport handles batching internally, but we still need to process the actual creation
     // This function is now called by EnhancedCSVImport for each batch or item
-    
+
     // If we receive a single item or small batch from EnhancedCSVImport
     const batch = Array.isArray(customers) ? customers : [customers];
-    
+
     try {
       const results = await Promise.all(
         batch.map(async (customer) => {
@@ -194,7 +346,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             mobile3: customer.mobile3,
             address_details: customer.address_details || {}
           };
-          
+
           const result = await createCustomer(customerData);
           if (result.error) {
             throw new Error(`Failed to create customer ${customer.name}: ${result.error.message}`);
@@ -202,10 +354,10 @@ const Dashboard = ({ agentPin, onSignOut }) => {
           return result.data;
         })
       );
-      
+
       // Refresh customers list after successful import
       refresh();
-      
+
       return { data: results, error: null };
     } catch (error) {
       console.error('Error importing customers:', error);
@@ -506,241 +658,388 @@ const Dashboard = ({ agentPin, onSignOut }) => {
     );
   };
 
-  const renderOverview = () => (
-    <div className="flex flex-col gap-y-4">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {statsLoading ? (
-          <SkeletonLoader type="stats" count={4} />
-        ) : (
-          <>
-            {/* Total Calls */}
-            <motion.div
-              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-primary-500" />
-                <div className="text-lg sm:text-xl font-bold text-primary-600">{stats.totalCalls}</div>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Total Calls</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">All-time record</p>
-            </motion.div>
-
-            {/* Today's Calls */}
-            <motion.div
-              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <UserCheck className="w-5 h-5 sm:w-6 sm:h-6 text-secondary-500" />
-                <div className="text-lg sm:text-xl font-bold text-secondary-600">{stats.todaysCalls}</div>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">My Calls Today</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">Calls I've completed</p>
-            </motion.div>
-
-            {/* Reminders */}
-            <motion.div
-              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-luxury-gold" />
-                <div className="text-lg sm:text-xl font-bold text-luxury-gold">{stats.todaysReminders}</div>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Call Queue</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">Calls to make today</p>
-            </motion.div>
-
-            {/* Active Customers */}
-            <motion.div
-              className="glass-card-gradient p-3 sm:p-4 hover:scale-105 transition-all duration-300 shadow-gradient"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600" />
-                <div className="text-lg sm:text-xl font-bold text-slate-600">{customers.length}</div>
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-slate-800">Customers</h3>
-              <p className="text-slate-600 text-xs sm:text-sm">Total in system</p>
-            </motion.div>
-          </>
-        )}
-      </div>
-
-      {/* Live Call Status Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="glass-card-gradient p-6 shadow-gradient border border-white/20"
+  // Filter pills component - Single line with icons
+  const renderFilterPills = () => (
+    <div className="flex items-center gap-2 px-4 overflow-x-auto pb-2">
+      {/* Today */}
+      <motion.button
+        onClick={() => handleQuickFilter('Today')}
+        className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          timeFilter === 'Today'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
       >
-        <div className="flex items-center justify-between mb-4">
+        <span className="font-bold text-lg">T</span>
+      </motion.button>
+
+      {/* Yesterday */}
+      <motion.button
+        onClick={() => handleQuickFilter('Yesterday')}
+        className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          timeFilter === 'Yesterday'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
+      >
+        <span className="font-bold text-lg">Y</span>
+      </motion.button>
+
+      {/* Past Week */}
+      <motion.button
+        onClick={() => handleQuickFilter('Past Week')}
+        className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          timeFilter === 'Past Week'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
+      >
+        <span className="font-bold text-lg">PW</span>
+      </motion.button>
+
+      {/* Past Month */}
+      <motion.button
+        onClick={() => handleQuickFilter('Past Month')}
+        className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          timeFilter === 'Past Month'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
+      >
+        <span className="font-bold text-lg">PM</span>
+      </motion.button>
+
+      {/* Lifetime */}
+      <motion.button
+        onClick={() => handleQuickFilter('Lifetime')}
+        className={`flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          timeFilter === 'Lifetime'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
+      >
+        <span className="font-bold text-lg">∞</span>
+      </motion.button>
+
+      {/* Date Selection */}
+      <motion.button
+        onClick={() => setShowCalendar(!showCalendar)}
+        className={`flex-shrink-0 flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+          showCalendar
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+        }`}
+        whileTap={{ scale: 0.95 }}
+      >
+        <Calendar className="w-4 h-4" />
+      </motion.button>
+
+      {/* Date range display */}
+      {customDateRange.start && (
+        <span className="text-sm text-slate-600 whitespace-nowrap">
+          {customDateRange.start.toLocaleDateString()} - {customDateRange.end ? customDateRange.end.toLocaleDateString() : 'To'}
+        </span>
+      )}
+
+      {/* Clear button */}
+      {customDateRange.start && (
+        <motion.button
+          onClick={clearDateRange}
+          className="p-1 rounded-full text-slate-500 hover:bg-slate-200 hover:text-slate-700 flex-shrink-0"
+          whileTap={{ scale: 0.9 }}
+        >
+          <X className="w-4 h-4" />
+        </motion.button>
+      )}
+    </div>
+  );
+
+  // Calendar modal component - Mobile first, inline
+  const renderCalendarModal = () => (
+    showCalendar && (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        className="bg-white rounded-lg shadow-lg p-4 mt-2 border"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex-1">
+            <h4 className="font-medium text-slate-800 mb-2">From</h4>
+            <input
+              type="date"
+              value={customDateRange.start ? customDateRange.start.toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                setCustomDateRange({ ...customDateRange, start: date });
+              }}
+              className="w-full p-2 border rounded text-sm"
+            />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-medium text-slate-800 mb-2">To</h4>
+            <input
+              type="date"
+              value={customDateRange.end ? customDateRange.end.toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                setCustomDateRange({ ...customDateRange, end: date });
+                if (customDateRange.start && date) {
+                  setTimeFilter('Custom Range');
+                  setShowCalendar(false);
+                }
+              }}
+              className="w-full p-2 border rounded text-sm"
+              min={customDateRange.start ? customDateRange.start.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4">
+          <motion.button
+            onClick={() => setShowCalendar(false)}
+            className="px-3 py-1 text-sm text-slate-600 hover:bg-slate-100 rounded"
+            whileTap={{ scale: 0.95 }}
+          >
+            Cancel
+          </motion.button>
+          <motion.button
+            onClick={() => {
+              if (customDateRange.start && customDateRange.end) {
+                setTimeFilter('Custom Range');
+                setShowCalendar(false);
+              }
+            }}
+            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            whileTap={{ scale: 0.95 }}
+            disabled={!customDateRange.start || !customDateRange.end}
+          >
+            Apply
+          </motion.button>
+        </div>
+      </motion.div>
+    )
+  );
+
+  // Hero card component
+  const renderHeroCard = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-blue-200 text-sm font-medium">Total Calls</p>
+          <p className="text-4xl font-bold mt-1">{callCounts.total}</p>
+          <p className="text-blue-100 text-sm mt-1">
+            {timeFilter === 'Today' ? 'Today' :
+             timeFilter === 'Yesterday' ? 'Yesterday' :
+             timeFilter === 'Past Week' ? 'Past 7 Days' :
+             timeFilter === 'Past Month' ? 'Past 30 Days' : 'All Time'}
+          </p>
+        </div>
+        <Phone className="w-12 h-12 opacity-20" />
+      </div>
+    </motion.div>
+  );
+
+  // Status grid component
+  const renderStatusGrid = () => (
+    <div className="grid grid-cols-2 gap-4">
+      {/* Completed */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-luxury font-semibold text-slate-800">
-              Live Call Status
-            </h2>
-            <p className="text-slate-600 text-sm">
-              Real-time overview of call dispositions
-            </p>
+            <p className="text-emerald-200 text-sm font-medium">Completed</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.completed}</p>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-slate-600 font-medium">Live</span>
-          </div>
-        </div>
-
-        {/* Status Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Busy Status - Emphasized */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="relative overflow-hidden"
-          >
-            <div className="bg-gradient-to-br from-amber-600 to-orange-700 rounded-2xl p-4 text-white shadow-xl border-2 border-amber-400/50">
-              <div className="flex items-center justify-between mb-2">
-                <Phone className="w-6 h-6 text-amber-100" />
-                <div className="w-2 h-2 bg-amber-200 rounded-full animate-pulse"></div>
-              </div>
-              <div className="text-2xl font-bold text-white mb-1">
-                {stats.callStatusBreakdown?.busy || 0}
-              </div>
-              <div className="text-sm font-semibold text-amber-100">
-                Line Busy
-              </div>
-              <div className="text-xs text-amber-200 mt-1">
-                Needs retry
-              </div>
-            </div>
-            {/* Priority indicator */}
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-xs font-bold text-white">!</span>
-            </div>
-          </motion.div>
-
-          {/* Completed */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="glass-card-subtle rounded-2xl p-4 border border-emerald-200/50"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <CheckCircle className="w-5 h-5 text-emerald-600" />
-              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {stats.callStatusBreakdown?.completed || 0}
-            </div>
-            <div className="text-sm font-medium text-emerald-700">
-              Completed
-            </div>
-          </motion.div>
-
-          {/* No Response */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="glass-card-subtle rounded-2xl p-4 border border-slate-200/50"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <Phone className="w-5 h-5 text-slate-600" />
-              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {stats.callStatusBreakdown?.no_answer || 0}
-            </div>
-            <div className="text-sm font-medium text-slate-700">
-              No Response
-            </div>
-          </motion.div>
-
-          {/* Follow Up */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="glass-card-subtle rounded-2xl p-4 border border-blue-200/50"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {stats.callStatusBreakdown?.follow_up || 0}
-            </div>
-            <div className="text-sm font-medium text-blue-700">
-              Follow Up
-            </div>
-          </motion.div>
-
-          {/* Not Interested */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="glass-card-subtle rounded-2xl p-4 border border-purple-200/50"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <User className="w-5 h-5 text-purple-600" />
-              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {stats.callStatusBreakdown?.not_interested || 0}
-            </div>
-            <div className="text-sm font-medium text-purple-700">
-              Not Interested
-            </div>
-          </motion.div>
-
-          {/* Invalid */}
-          <motion.div
-            whileHover={{ scale: 1.05, y: -2 }}
-            className="glass-card-subtle rounded-2xl p-4 border border-red-200/50"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <X className="w-5 h-5 text-red-600" />
-              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-            </div>
-            <div className="text-xl font-bold text-slate-800 mb-1">
-              {stats.callStatusBreakdown?.invalid || 0}
-            </div>
-            <div className="text-sm font-medium text-red-700">
-              Invalid
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50">
-          <div className="text-sm text-slate-600">
-            <span className="font-medium">Total Calls:</span> {stats.totalCalls || 0}
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              onClick={refreshStats}
-              variant="secondary"
-              size="sm"
-              className="flex items-center space-x-1"
-            >
-              <BarChart3 className="w-3 h-3" />
-              <span>Refresh</span>
-            </Button>
-          </div>
+          <CheckCircle className="w-8 h-8" />
         </div>
       </motion.div>
 
-      {/* Call Status Breakdown */}
-      <div className="glass-card-gradient p-4 hover:scale-105 transition-all duration-300 shadow-gradient">
-        <h3 className="text-xl font-luxury font-semibold text-slate-800 mb-4">Call Results Summary</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {Object.entries(stats.callStatusBreakdown).map(([status, count]) => (
-            <div key={status} className="text-center">
-              <div className={`px-3 py-2 rounded-full border text-sm font-medium ${getStatusColor(status)} hover:scale-105 transition-all duration-300 shadow-sm`}>
-                {formatCallStatus(status)}
-              </div>
-              <div className="text-xl font-bold text-slate-800 mt-2">{count}</div>
-            </div>
-          ))}
+      {/* Busy */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-amber-600 to-orange-600 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-amber-200 text-sm font-medium">Busy</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.busy}</p>
+          </div>
+          <Phone className="w-8 h-8" />
         </div>
+      </motion.div>
+
+      {/* No Answer */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-slate-200 text-sm font-medium">No Answer</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.no_answer}</p>
+          </div>
+          <Phone className="w-8 h-8" />
+        </div>
+      </motion.div>
+
+      {/* Follow Up */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-blue-200 text-sm font-medium">Follow Up</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.follow_up}</p>
+          </div>
+          <Clock className="w-8 h-8" />
+        </div>
+      </motion.div>
+
+      {/* Not Interested */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-purple-200 text-sm font-medium">Not Interested</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.not_interested}</p>
+          </div>
+          <User className="w-8 h-8" />
+        </div>
+      </motion.div>
+
+      {/* Invalid */}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        className="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-4 text-white"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-red-200 text-sm font-medium">Invalid</p>
+            <p className="text-2xl font-bold mt-1">{callCounts.invalid}</p>
+          </div>
+          <X className="w-8 h-8" />
+        </div>
+      </motion.div>
+    </div>
+  );
+
+  const renderOverview = () => (
+    <div className="flex flex-col gap-y-6">
+      {/* Filter Pills */}
+      <div className="px-4">
+        {renderFilterPills()}
+      </div>
+
+      {/* Calendar Modal */}
+      <div className="px-4">
+        {renderCalendarModal()}
+      </div>
+
+      {/* Hero Card */}
+      <div className="px-4">
+        {renderHeroCard()}
+      </div>
+
+      {/* Status Grid */}
+      <div className="px-4">
+        {renderStatusGrid()}
+      </div>
+
+      {/* Action Pills */}
+      <div className="px-4">
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {/* Overdue Calls Pill */}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="flex-shrink-0 bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3 rounded-full shadow-md"
+          >
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="text-sm font-medium">Overdue: {actionCounts.overdue}</span>
+            </div>
+          </motion.div>
+
+          {/* Today Calls Pill */}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-full shadow-md"
+          >
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4" />
+              <span className="text-sm font-medium">Today: {actionCounts.todayCalls}</span>
+            </div>
+          </motion.div>
+
+          {/* Pending Calls Pill */}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="flex-shrink-0 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-full shadow-md"
+          >
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              <span className="text-sm font-medium">Pending: {actionCounts.pending}</span>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Additional Analytics Section (preserved from existing) */}
+      <div className="px-4">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="glass-card-gradient p-6 shadow-gradient border border-white/20 rounded-2xl"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-luxury font-semibold text-slate-800">
+                Call Analytics
+              </h2>
+              <p className="text-slate-600 text-sm">
+                Detailed breakdown of call outcomes
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm text-slate-600 font-medium">Live</span>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50">
+            <div className="text-sm text-slate-600">
+              <span className="font-medium">Total Calls:</span> {callCounts.total || 0}
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                onClick={refreshStats}
+                variant="secondary"
+                size="sm"
+                className="flex items-center space-x-1"
+              >
+                <BarChart3 className="w-3 h-3" />
+                <span>Refresh</span>
+              </Button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -772,7 +1071,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
             >
               {/* Card Design Matching Customer Cards */}
               <div className={`
-                w-full bg-white rounded-2xl shadow-lg border border-white/20 
+                w-full bg-white rounded-2xl shadow-lg border border-white/20
                 overflow-hidden mb-4
               `}
               style={{
@@ -785,10 +1084,10 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   <div className="flex items-start justify-between mb-2">
                     {/* Contact Name - Bold, Helvetica, max 2 lines */}
                     <div className="flex-1 mr-3">
-                      <h3 
+                      <h3
                         className="text-slate-800 font-bold leading-tight"
-                        style={{ 
-                          fontSize: '15px', 
+                        style={{
+                          fontSize: '15px',
                           fontWeight: '700',
                           lineHeight: '1.3',
                           maxHeight: '2.6em',
@@ -800,7 +1099,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         {record.fcm_customers?.name}
                       </h3>
                     </div>
-                    
+
                     {/* Status Pill - Top Right */}
                     <motion.span
                       className={`
@@ -814,7 +1113,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                       {formatCallStatus(record.call_status)}
                     </motion.span>
                   </div>
-                  
+
                   {/* Call Time Metadata - Subtle, left-aligned */}
                   <div className="text-xs text-slate-500 flex items-center space-x-1">
                     <Clock className="w-3 h-3 text-slate-400" />
@@ -828,15 +1127,15 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                     {/* Primary Mobile Number */}
                     <motion.button
                       onClick={() => {
-                        const customerWithNumber = { 
-                          ...record.fcm_customers, 
-                          mobile1: record.called_mobile_number || record.fcm_customers?.mobile1 
+                        const customerWithNumber = {
+                          ...record.fcm_customers,
+                          mobile1: record.called_mobile_number || record.fcm_customers?.mobile1
                         };
                         console.log('📞 Calling:', customerWithNumber.mobile1);
                         handleCallCustomer(customerWithNumber);
                       }}
                       className="
-                        bg-gradient-to-r from-blue-500 to-blue-600 text-white 
+                        bg-gradient-to-r from-blue-500 to-blue-600 text-white
                         px-4 py-2.5 rounded-full text-sm font-medium
                         min-h-[40px] flex items-center gap-2
                         active:scale-95 transition-transform duration-200
@@ -909,7 +1208,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                         handleDispositionCustomer(record.fcm_customers);
                       }}
                       className="
-                        bg-gradient-to-r from-emerald-600 to-emerald-700 text-white 
+                        bg-gradient-to-r from-emerald-600 to-emerald-700 text-white
                         px-5 py-3 rounded-xl font-bold text-sm
                         min-h-[44px] flex items-center justify-center gap-2
                         active:scale-95 transition-transform duration-200
@@ -931,7 +1230,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                           handleViewProfile(record.fcm_customers);
                         }}
                         className="
-                          bg-slate-200 text-slate-500 
+                          bg-slate-200 text-slate-500
                           px-3 py-3 rounded-xl
                           min-h-[44px] min-w-[44px] flex items-center justify-center
                           active:scale-95 transition-transform duration-200
@@ -951,7 +1250,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                           handleViewCallHistory(record.fcm_customers);
                         }}
                         className="
-                          bg-slate-200 text-slate-500 
+                          bg-slate-200 text-slate-500
                           px-3 py-3 rounded-xl
                           min-h-[44px] min-w-[44px] flex items-center justify-center
                           active:scale-95 transition-transform duration-200
@@ -971,7 +1270,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                           handleDeleteCustomer(record.fcm_customers?.id);
                         }}
                         className="
-                          bg-red-50 text-red-500 
+                          bg-red-50 text-red-500
                           px-3 py-3 rounded-xl
                           min-h-[44px] min-w-[44px] flex items-center justify-center
                           active:scale-95 transition-transform duration-200
@@ -1033,7 +1332,6 @@ const Dashboard = ({ agentPin, onSignOut }) => {
       )}
     </div>
   );
-
 
   const renderActivityLogs = () => (
     <div className="flex flex-col gap-y-4">
@@ -1649,7 +1947,7 @@ const Dashboard = ({ agentPin, onSignOut }) => {
                   {callRecords.filter(record => record.customer_id === selectedHistoryCustomer.id).length} total calls
                 </span>
               </div>
-              
+
               {callRecords
                 .filter(record => record.customer_id === selectedHistoryCustomer.id)
                 .sort((a, b) => new Date(b.call_date) - new Date(a.call_date))
